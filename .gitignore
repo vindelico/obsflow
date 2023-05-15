@@ -127,3 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+/old/
+/pre_workflow_from_portail-ing/
+/1_catalog.ipynb
+/2_getting_started.ipynb
+/just_tests.ipynb
+/just_tests.py
+/checkup.ipynb
+/.idea/
