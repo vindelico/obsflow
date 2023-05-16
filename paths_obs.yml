@@ -1,0 +1,78 @@
+#add you own paths and rename this file paths1.yml
+
+paths:
+  project_catalog: &pcat
+    /scen3/braun/data/obs_synthese23/pcat_obs.json
+  task: /scen3/braun/data/obs_synthese23/{processing_level}/{id}_{xrfreq}_{processing_level}.zarr
+  ba: /scen3/braun/data/obs_synthese23/{processing_level}/{id}_{xrfreq}_{processing_level}_{variable}.zarr
+
+# Task Arguments
+
+extract:
+  reconstruction:
+    search_data_catalogs:
+      data_catalogs:
+        - /tank/scenario/catalogues/reconstruction-extra.json # rsds
+        - /tank/scenario/catalogues/reconstruction.json # ERA5-Land
+  station-obs:
+    search_data_catalogs:
+      data_catalogs:
+        - /tank/scenario/catalogues/station-obs.json # AHCCD
+
+#  simulation:
+#    search_data_catalogs:
+#      data_catalogs:
+#        #-  PATH_TO_OFFICIAL_CATALOGUES/simulation.json
+#        #- /tank/scenario/catalogues/simulation.json
+#regrid:
+#  regrid_dataset:
+#    weights_location: /scen3/braun/data/obs_synthese23/regridded/weights/
+
+cleanup:
+  search_data_catalogs:
+    data_catalogs:
+      - *pcat
+
+rechunk:
+  xscen_rechunk:
+    temp_store: /scen3/braun/data/obs_synthese23/tmp/
+
+indicators:
+  path_yml: indicators_obs.yml
+
+diagnostics:
+  kind:
+    reference:
+      properties_and_measures:
+        properties: properties_obs.yml
+    simulation:
+      properties_and_measures:
+        properties: properties_obs.yml
+    scenario:
+      properties_and_measures:
+        properties: properties_obs.yml
+
+# General Arguments
+
+dask:
+  client:
+    local_directory: /exec/braun/dask/
+    dashboard_address: 1966
+
+logging:
+    handlers:
+        file:
+            filename: /scen3/braun/data/obs_synthese23/logger.log
+
+utils:
+    stack_drop_nans:
+        to_file: &coords
+          /scen3/braun/data/obs_synthese23/stack_coords/coords_{domain}_{shape}.nc
+    unstack_fill_nan:
+      coords: *coords
+    maybe_unstack:
+      coords: *coords
+
+scripting:
+  send_mail:
+    to: Braun.Marco@ouranos.ca
