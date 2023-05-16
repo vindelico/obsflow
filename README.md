@@ -5,7 +5,7 @@ The operations of this workflow are based on and exploit the xscen, xclim and sp
 
 # Features
 Extract, analyse and visualize historical climate data from
-- AHCCD data.
+- AHCCD
 - RDRSv2
 - ERA5-Land
 
