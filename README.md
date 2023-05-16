@@ -1,8 +1,17 @@
-# obsflow
+# ObsFlow
+A workflow to extract, analyse and visualize data of historical climate.
 
-`is this a code section?`
+The operations of this workflow are based on and exploit the xscen, xclim and spirograph libraries.
 
-**what does this**  do to my text? *bold* and **italic** tricks.
+# Features
+Extract, analyse and visualize historical climate data from
+- AHCCD data.
+- RDRSv2
+- ERA5-Land
 
-I see, this is just like a notebook.
+# TODO
+Refine this description and write code for basically everything except data extraction.
+
+
+
 
