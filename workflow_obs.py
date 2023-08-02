@@ -6,9 +6,10 @@ import os
 import xarray as xr
 from dask import config as dskconf
 from dask.distributed import Client
-
+import xclim
 import xscen as xs
 from xscen.config import CONFIG
+from copy import copy
 
 # Load configuration
 xs.load_config(
@@ -94,10 +95,13 @@ if __name__ == "__main__":
 
                             # save to zarr
                             path = CONFIG["paths"]["task"].format(**cur)
-                            # xs.save_to_netcdf(ds=ds, filename=path.replace('zarr', 'nc'),
-                            #                   rechunk=type_dict["save"]["rechunk"],
-                            #                   # for some reason h5netcdf doesn't write correct files here
-                            #                   netcdf_kwargs={'engine': 'netcdf4'})
+                            # try:
+                            #     xs.save_to_netcdf(ds=ds, filename=path.replace('zarr', 'nc'),
+                            #                       rechunk=type_dict["save"]["rechunk"],
+                            #                       # for some reason h5netcdf doesn't write correct files here
+                            #                       netcdf_kwargs={'engine': 'netcdf4'})
+                            # except:
+                            #     print(f'Couln\'t write file: {path.replace("zarr", "nc")}')
                             xs.save_to_zarr(ds=ds, filename=path, **type_dict["save"])
                             pcat.update_from_ds(ds=ds, path=path)
 
@@ -248,6 +252,7 @@ if __name__ == "__main__":
         for kind, kind_dict in CONFIG["diagnostics"]["kind"].items():
             # iterate on inputs
             dict_input = pcat.search(**kind_dict["inputs"]).to_dataset_dict(**tdd)
+            my_kinds_properties = copy(kind_dict["properties_and_measures"]["properties"])
             for key_input, ds_input in dict_input.items():
                 cur = {
                     "id": ds_input.attrs["cat:id"],
@@ -269,21 +274,43 @@ if __name__ == "__main__":
                                 **kind_dict["dref_for_measure"],
                             ).to_dataset(**tdd)
 
-                        # compute properties and measures
-                        prop, meas = xs.properties_and_measures(
-                            ds=ds_input,
-                            dref_for_measure=dref_for_measure,
-                            **kind_dict["properties_and_measures"],
-                        )
+                        # filter for properties for which variables are available
+                        module = xs.indicators.load_xclim_module(my_kinds_properties, reload=True)
+                        avail_vars = {var for var in ds_input.data_vars if var in xclim.core.utils.VARIABLES.keys()}
+                        # needed_vars = set([key for name, ind in module.iter_indicators() for key in ind.parameters.keys()
+                        #                    if key in xclim.core.utils.VARIABLES.keys()])
+                        # ind_to_remove = [name for name, ind in module.iter_indicators()
+                        #                  for var in needed_vars - avail_vars if var in ind.parameters.keys()]
+                        # for ind in ind_to_remove:
+                        #     module.__dict__.pop(ind)
+                        # kind_dict["properties_and_measures"]["properties"] = module
+                        ind_to_process = [(name, ind) for var in avail_vars
+                                          for name, ind in module.iter_indicators() if var in ind.parameters.keys()]
+                        kind_dict["properties_and_measures"]["properties"] = \
+                            xs.indicators.select_inds_for_avail_vars(ds_input, my_kinds_properties)
+
+                        # compute properties per period
+                        prop = xr.Dataset()
+                        for period in CONFIG["diagnostics"]["periods"]:
+                            # compute properties
+                            if ds_input.time.dt.year.min() <= period[0] and ds_input.time.dt.year.max() >= period[1]:
+                                prop = xs.properties_and_measures(
+                                    ds=ds_input,
+                                    dref_for_measure=dref_for_measure,
+                                    **kind_dict["properties_and_measures"],
+                                    period=period,
+                                )
+                                prop = prop.assign_coords(period=('period', f'{period[0]}-{period[1]}'))
+                                prop = prop.expand_dims(dim='period')
+                                prop = xr.merge([prop, proper])
 
                         # save to zarr
-                        for out in [meas, prop]:
-                            cur["processing_level"] = out.attrs["cat:processing_level"]
-                            # don't save if empty
-                            if len(out.data_vars) > 0:
-                                path_diag = f"{CONFIG['paths']['task']}".format(**cur)
-                                xs.save_to_zarr(out, path_diag, **kind_dict["save"])
-                                pcat.update_from_ds(ds=out, path=path_diag)
+                        cur["processing_level"] = out.attrs["cat:processing_level"]
+                        # don't save if empty
+                        if len(prop.data_vars) > 0:
+                            path_diag = f"{CONFIG['paths']['task']}".format(**cur)
+                            xs.save_to_zarr(prop, path_diag, **kind_dict["save"])
+                            pcat.update_from_ds(ds=prop, path=path_diag)
 
         # # summary of diagnostics
         # get sim measures
@@ -333,10 +360,11 @@ if __name__ == "__main__":
                 Client(**CONFIG["indicators"]["dask"], **daskkws),
                 xs.measure_time(name=f"indicators {key_input}", logger=logger),
             ):
+
                 # compute indicators
                 dict_indicator = xs.compute_indicators(
                     ds=ds_input,
-                    indicators=CONFIG["indicators"]["path_yml"],
+                    indicators=xs.indicators.select_inds_for_avail_vars(ds_input, CONFIG["indicators"]["path_yml"]),
                 )
 
                 # iter over output dictionary (keys are freqs)
@@ -357,7 +385,7 @@ if __name__ == "__main__":
     # --- CLIMATOLOGICAL MEAN ---
     if "climatology" in CONFIG["tasks"]:
         # iterate over inputs
-        ind_dict = pcat.search(**CONFIG["aggregate"]["input"]["clim"]).to_dataset_dict(
+        ind_dict = pcat.search(**CONFIG["aggregate"]["input"]["obs"]).to_dataset_dict(
             **tdd
         )
         for key_input, ds_input in ind_dict.items():
@@ -366,6 +394,9 @@ if __name__ == "__main__":
                 "xrfreq": ds_input.attrs["cat:xrfreq"],
                 "processing_level": "climatology",
             }
+            ### skip AHCCD, MRCC5 for now
+            if any(s in cur['id'] for s in ['AHCCD', 'MRCC5', 'RDRS']):
+                continue
             if not pcat.exists_in_cat(**cur):
                 with (
                     Client(**CONFIG["aggregate"]["dask"], **daskkws),
