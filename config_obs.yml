@@ -17,8 +17,8 @@ tasks:
   #- cleanup # Join each individually adjusted variable back in one scenario dataset and clean up other details.
   #- rechunk # Rechunk the scenario dataset and save it.
   #- diagnostics # Compute diagnostics (properties, measures and summaries)
-  #- indicators # Compute xclim indicators on the scenario.
-  - climatology # Compute the climatological mean of the indicators
+  - indicators # Compute xclim indicators on the scenario.
+  # climatology # Compute the climatological mean of the indicators
   #- delta # Compute the deltas of the climatological means.
   #- ensembles # Compute the ensemble statistics on indicators, climatology and deltas.
 
@@ -122,7 +122,7 @@ extract:
       #allow_conversion: True
       variables_and_freqs:
         #pr: D
-        tas: D
+        tas: 3H
       periods: &sim_period
         - '1979'
         - '1985'
@@ -339,7 +339,7 @@ diagnostics:
     n_workers: 3
     threads_per_worker: 5
     memory_limit: "8GB"
-  periods: [['1951', '1980'], ['1961', '1990'], ['1971', '2000'], ['1981', '2010'], ['1991', '2020'], ['1991', '2018']]
+  periods: [['1951', '1980'], ['1961', '1990'], ['1971', '2000'], ['1981', '2010'], ['1991', '2020'], ['1991', '2018'], ['1980', '1985']]
   kind:
     reconstruction:
       inputs:
@@ -353,7 +353,7 @@ diagnostics:
           tasmin: degC
           tasmax: degC
           pr: mm d-1
-        to_level_prop: diag-properties-obs
+        to_level_prop: climatology #diag-properties
       save:
         mode: o
         rechunk:
@@ -366,11 +366,11 @@ diagnostics:
 #      dref_for_measure:
 #        processing_level: diag-properties-bsc
       properties_and_measures:
-        period:
-          - '1980'
-          - '1985'
+#        period:
+#          - '1980'
+#          - '1985'
         unstack: False #*stack
-        to_level_prop: diag-properties-sim
+        to_level_prop: climatology #diag-properties
         change_units_arg:
           tas: degC
           #tasmin: degC
@@ -391,7 +391,7 @@ diagnostics:
       properties_and_measures:
 #        period: #*ref_period
         unstack: False
-        to_level_prop: diag-properties-obs
+        to_level_prop: climatology #diag-properties
         change_units_arg:
           tas: degC
           tasmin: degC
@@ -426,17 +426,15 @@ aggregate:
     n_workers: 4
     threads_per_worker: 4
     memory_limit: "6GB"
+  periods: [['1951', '1980'], ['1961', '1990'], ['1971', '2000'], ['1981', '2010'], ['1991', '2020'], ['1991', '2018'], ['1980', '1985']]
   input:
     obs:
       processing_level:
          - indicators
-#         - extracted
   climatological_mean: # automatically passed to the function
-    window: 30
-    interval: 1
-    min_periods: 27
-#    periods: [['1951', '1980'], ['1961', '1990'], ['1971', '2000'], ['1981', '2010'], ['1991', '2020'], ['1991', '2018']]
-    periods: [['1981', '2010'], ['1991', '2020'], ['1991', '2018']]
+    to_level: climatology
+  climatological_op: # automatically passed to the function
+    op: std
     to_level: climatology
   save:
     mode: 'o'
@@ -464,13 +462,13 @@ aggregate:
 # General Arguments
 
 project: # argument to create the project
-  name: ObsFlow - workflow for observation data
-  version: 1.0.0
-  description: Workflow for observation data climatic analysis
-  id: obs1
+  name: ObsFlow - A workflow for observation data
+  version: 0.2
+  description: Workflow for extracting observation data and performing climatic analysis
+  id: obsflow
 
 scripting: # send an email when code fails or succeed
-  subject: ObsFlow - workflow for observation data
+  subject: ObsFlow - A workflow for observation data
   send_mail_on_exit:
     msg_err: I crashed, something went wrong!
     on_error_only: True

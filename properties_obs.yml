@@ -5,7 +5,7 @@ indicators:
   tas_mean_ann:
     base: xclim.sdba.properties.mean
     cf_attrs:
-      long_name: Annual mean temperature
+      long_name: annual mean temperature
       cell_methods: "time : mean over years"
     input:
       da: tas
@@ -14,7 +14,7 @@ indicators:
   tas_mean_sea:
     base: xclim.sdba.properties.mean
     cf_attrs:
-      long_name: Seasonal mean temperature
+      long_name: seasonal mean temperature
       cell_methods: "time: mean over years"
     input:
       da: tas
@@ -23,7 +23,7 @@ indicators:
   tas_mean_mon:
     base: xclim.sdba.properties.mean
     cf_attrs:
-      long_name: Monthly mean temperature
+      long_name: monthly mean temperature
       cell_methods: "time: mean over years"
     input:
       da: tas
@@ -33,7 +33,7 @@ indicators:
   tasmin_mean_ann:
     base: xclim.sdba.properties.mean
     cf_attrs:
-      long_name: Annual mean minimum temperature
+      long_name: annual mean minimum temperature
       cell_methods: "time: mean over years"
     input:
       da: tasmin
@@ -42,7 +42,7 @@ indicators:
   tasmin_mean_sea:
     base: xclim.sdba.properties.mean
     cf_attrs:
-      long_name: Seasonal mean minimum temperature
+      long_name: seasonal mean minimum temperature
       cell_methods: "time: mean over years"
     input:
       da: tasmin
@@ -51,7 +51,7 @@ indicators:
   tasmin_mean_mon:
     base: xclim.sdba.properties.mean
     cf_attrs:
-      long_name: Monthly mean minimum temperature
+      long_name: monthly mean minimum temperature
       cell_methods: "time: mean over years"
     input:
       da: tasmin
@@ -61,7 +61,7 @@ indicators:
   tasmax_mean_ann:
     base: xclim.sdba.properties.mean
     cf_attrs:
-      long_name: Annual mean maximum temperature # TODO Does this make any sense?
+      long_name: annual mean maximum temperature # TODO Does this make any sense?
       cell_methods: "time: mean over years"
     input:
       da: tasmax
@@ -70,7 +70,7 @@ indicators:
   tasmax_mean_sea:
     base: xclim.sdba.properties.mean
     cf_attrs:
-      long_name: Seasonal mean maximum temperature
+      long_name: seasonal mean maximum temperature
       cell_methods: "time: mean over years"
     input:
       da: tasmax
@@ -79,97 +79,99 @@ indicators:
   tasmax_mean_mon:
     base: xclim.sdba.properties.mean
     cf_attrs:
-      long_name: Monthly mean maximum temperature
+      long_name: monthly mean maximum temperature
       cell_methods: "time: mean over years"
     input:
       da: tasmax
     parameters:
       group: time.month
-  # ----------------------------Standard Deviation--------------------------------
-  # Standard deviation tas
-  tas_std_ann:
-    base: xclim.sdba.properties.std
-    cf_attrs:
-      long_name: Standard deviation of annual mean temperature # TODO check if this is correct!
-      cell_methods: "time: std over years"
-    input:
-      da: tas
-    parameters:
-      group: time
-  tas_std_sea:
-    base: xclim.sdba.properties.std
-    cf_attrs:
-      long_name: Standard deviation of seasonal mean temperature # TODO check if this is correct!
-      cell_methods: "time: std over years"
-    input:
-      da: tas
-    parameters:
-      group: time.season
-  tas_std_mon:
-    base: xclim.sdba.properties.std
-    cf_attrs:
-      long_name: Standard deviation of monthly mean temperature # TODO check if this is correct!
-      cell_methods: "time: std over years"
-    input:
-      da: tas
-    parameters:
-      group: time.month
-  # Standard deviation tasmin
-  tasmin_std_ann:
-    base: xclim.sdba.properties.std
-    cf_attrs:
-      long_name: Standard deviation of annual mean minimum temperature # TODO check if this is correct!
-      cell_methods: "time: std over years"
-    input:
-      da: tasmin
-    parameters:
-      group: time
-  tasmin_std_sea:
-    base: xclim.sdba.properties.std
-    cf_attrs:
-      long_name: Standard deviation of seasonal mean minimum temperature # TODO check if this is correct!
-      cell_methods: "time: std over years"
-    input:
-      da: tasmin
-    parameters:
-      group: time.season
-  tasmin_std_mon:
-    base: xclim.sdba.properties.std
-    cf_attrs:
-      long_name: Standard deviation of monthly mean minimum temperature # TODO check if this is correct!
-      cell_methods: "time: std over years"
-    input:
-      da: tasmin
-    parameters:
-      group: time.month
-  # Standard deviation tasmax
-  tasmax_std_ann:
-    base: xclim.sdba.properties.std
-    cf_attrs:
-      long_name: Standard deviation of annual mean maximum temperature # TODO check if this is correct!
-      cell_methods: "time: std over years"
-    input:
-      da: tasmax
-    parameters:
-      group: time
-  tasmax_std_sea:
-    base: xclim.sdba.properties.std
-    cf_attrs:
-      long_name: Standard deviation of seasonal mean maximum temperature # TODO check if this is correct!
-      cell_methods: "time: std over years"
-    input:
-      da: tasmax
-    parameters:
-      group: time.season
-  tasmax_std_mon:
-    base: xclim.sdba.properties.std
-    cf_attrs:
-      long_name: Standard deviation of seasonal mean maximum temperature # TODO check if this is correct!
-      cell_methods: "time: std over years"
-    input:
-      da: tasmax
-    parameters:
-      group: time.month
+
+# ----------------------------Standard Deviation--------------------------------
+# WARNING: This does not produce the correct result. ABANDONED!
+#  # Standard deviation tas
+#  tas_std_ann:
+#    base: xclim.sdba.properties.std
+#    cf_attrs:
+#      long_name: intra annual standard deviation of daily mean temperature # TODO check if this is correct!
+#      cell_methods: "time: std over years"
+#    input:
+#      da: tas
+#    parameters:
+#      group: time
+#  tas_std_sea:
+#    base: xclim.sdba.properties.std
+#    cf_attrs:
+#      long_name: intra seasonal standard deviation of daily mean temperature # TODO check if this is correct!
+#      cell_methods: "time: std over years"
+#    input:
+#      da: tas
+#    parameters:
+#      group: time.season
+#  tas_std_mon:
+#    base: xclim.sdba.properties.std
+#    cf_attrs:
+#      long_name: intra monthly standard deviation of daily mean temperature # TODO check if this is correct!
+#      cell_methods: "time: std over years"
+#    input:
+#      da: tas
+#    parameters:
+#      group: time.month
+#  # Standard deviation tasmin
+#  tasmin_std_ann:
+#    base: xclim.sdba.properties.std
+#    cf_attrs:
+#      long_name: intra annual standard deviation of daily minimum temperature # TODO check if this is correct!
+#      cell_methods: "time: std over years"
+#    input:
+#      da: tasmin
+#    parameters:
+#      group: time
+#  tasmin_std_sea:
+#    base: xclim.sdba.properties.std
+#    cf_attrs:
+#      long_name: intra seasonal standard deviation of daily minimum temperature # TODO check if this is correct!
+#      cell_methods: "time: std over years"
+#    input:
+#      da: tasmin
+#    parameters:
+#      group: time.season
+#  tasmin_std_mon:
+#    base: xclim.sdba.properties.std
+#    cf_attrs:
+#      long_name: intra monthly standard deviation of daily minimum temperature # TODO check if this is correct!
+#      cell_methods: "time: std over years"
+#    input:
+#      da: tasmin
+#    parameters:
+#      group: time.month
+#  # Standard deviation tasmax
+#  tasmax_std_ann:
+#    base: xclim.sdba.properties.std
+#    cf_attrs:
+#      long_name: intra annual standard deviation of daily maximum temperature # TODO check if this is correct!
+#      cell_methods: "time: std over years"
+#    input:
+#      da: tasmax
+#    parameters:
+#      group: time
+#  tasmax_std_sea:
+#    base: xclim.sdba.properties.std
+#    cf_attrs:
+#      long_name: intra seasonal standard deviation of daily maximum temperature # TODO check if this is correct!
+#      cell_methods: "time: std over years"
+#    input:
+#      da: tasmax
+#    parameters:
+#      group: time.season
+#  tasmax_std_mon:
+#    base: xclim.sdba.properties.std
+#    cf_attrs:
+#      long_name: intra monthly standard deviation of daily maximum temperature # TODO check if this is correct!
+#      cell_methods: "time: std over years"
+#    input:
+#      da: tasmax
+#    parameters:
+#      group: time.month
 #  # Variance
 #  tas_var_ann:
 #    base: xclim.sdba.properties.var
@@ -195,97 +197,97 @@ indicators:
 #      da: tas
 #    parameters:
 #      group: time.month
-  # ---------------------------------Trends-------------------------------------
-  # Trends in annual means of daily mean temperature
-  tas_linreg_slope_ann:
-    base: xclim.sdba.properties.trend
-    cf_attrs:
-      long_name: Linear trend of annual mean of daily mean temperature
-      cell_methods: "time: mean trend over years"
-    input:
-      da: tas
-    parameters:
-      group: time
-      output: slope
-  tas_linreg_pvalue_ann:
-    base: xclim.sdba.properties.trend
-    cf_attrs:
-      long_name: p-Value of linear trend of annual mean of daily mean temperature
-      cell_methods: "time: trend over years"
-    input:
-      da: tas
-    parameters:
-      group: time
-      output: pvalue
-  tas_linreg_stderr_ann:
-    base: xclim.sdba.properties.trend
-    cf_attrs:
-      long_name: Standard error of linear trend of annual mean of daily mean temperature
-      cell_methods: "time: trend over years"
-    input:
-      da: tas
-    parameters:
-      group: time
-      output: stderr
-  # Trends in annual means of daily minimum temperature
-  tasmin_linreg_slope_ann:
-    base: xclim.sdba.properties.trend
-    cf_attrs:
-      long_name: Linear trend of annual mean of daily minimum temperature
-      cell_methods: "time: trend over years"
-    input:
-      da: tasmin
-    parameters:
-      group: time
-      output: slope
-  tasmin_linreg_pvalue_ann:
-    base: xclim.sdba.properties.trend
-    cf_attrs:
-      long_name: p-Value of linear trend of annual mean of daily minimum temperature
-      cell_methods: "time: trend over years"
-    input:
-      da: tasmin
-    parameters:
-      group: time
-      output: pvalue
-  tasmin_linreg_stderr_ann:
-    base: xclim.sdba.properties.trend
-    cf_attrs:
-      long_name: Standard error of linear trend of annual mean of daily minimum temperature
-      cell_methods: "time: trend over years"
-    input:
-      da: tasmin
-    parameters:
-      group: time
-      output: stderr
-  # Trends in annual means of daily maximum temperature
-  tasmax_linreg_slope_ann:
-    base: xclim.sdba.properties.trend
-    cf_attrs:
-      long_name: Linear trend of annual mean of daily maximum temperature
-      cell_methods: "time: trend over years"
-    input:
-      da: tasmax
-    parameters:
-      group: time
-      output: slope
-  tasmax_linreg_pvalue_ann:
-    base: xclim.sdba.properties.trend
-    cf_attrs:
-      long_name: p-Value of linear trend of annual mean of daily maximum temperature
-      cell_methods: "time: trend over years"
-    input:
-      da: tasmax
-    parameters:
-      group: time
-      output: pvalue
-  tasmax_linreg_stderr_ann:
-    base: xclim.sdba.properties.trend
-    cf_attrs:
-      long_name: Standard error of linear trend of annual mean of daily maximum temperature
-      cell_methods: "time: trend over years"
-    input:
-      da: tasmax
-    parameters:
-      group: time
-      output: stderr
+# ---------------------------------Trends-------------------------------------
+#  # Trends in annual means of daily mean temperature
+#  tas_linreg_slope_ann:
+#    base: xclim.sdba.properties.trend
+#    cf_attrs:
+#      long_name: Linear trend of annual mean of daily mean temperature
+#      cell_methods: "time: mean trend over years"
+#    input:
+#      da: tas
+#    parameters:
+#      group: time
+#      output: slope
+#  tas_linreg_pvalue_ann:
+#    base: xclim.sdba.properties.trend
+#    cf_attrs:
+#      long_name: p-Value of linear trend of annual mean of daily mean temperature
+#      cell_methods: "time: trend over years"
+#    input:
+#      da: tas
+#    parameters:
+#      group: time
+#      output: pvalue
+#  tas_linreg_stderr_ann:
+#    base: xclim.sdba.properties.trend
+#    cf_attrs:
+#      long_name: standard error of linear trend of annual mean of daily mean temperature
+#      cell_methods: "time: trend over years"
+#    input:
+#      da: tas
+#    parameters:
+#      group: time
+#      output: stderr
+#  # Trends in annual means of daily minimum temperature
+#  tasmin_linreg_slope_ann:
+#    base: xclim.sdba.properties.trend
+#    cf_attrs:
+#      long_name: Linear trend of annual mean of daily minimum temperature
+#      cell_methods: "time: trend over years"
+#    input:
+#      da: tasmin
+#    parameters:
+#      group: time
+#      output: slope
+#  tasmin_linreg_pvalue_ann:
+#    base: xclim.sdba.properties.trend
+#    cf_attrs:
+#      long_name: p-Value of linear trend of annual mean of daily minimum temperature
+#      cell_methods: "time: trend over years"
+#    input:
+#      da: tasmin
+#    parameters:
+#      group: time
+#      output: pvalue
+#  tasmin_linreg_stderr_ann:
+#    base: xclim.sdba.properties.trend
+#    cf_attrs:
+#      long_name: standard error of linear trend of annual mean of daily minimum temperature
+#      cell_methods: "time: trend over years"
+#    input:
+#      da: tasmin
+#    parameters:
+#      group: time
+#      output: stderr
+#  # Trends in annual means of daily maximum temperature
+#  tasmax_linreg_slope_ann:
+#    base: xclim.sdba.properties.trend
+#    cf_attrs:
+#      long_name: Linear trend of annual mean of daily maximum temperature
+#      cell_methods: "time: trend over years"
+#    input:
+#      da: tasmax
+#    parameters:
+#      group: time
+#      output: slope
+#  tasmax_linreg_pvalue_ann:
+#    base: xclim.sdba.properties.trend
+#    cf_attrs:
+#      long_name: p-Value of linear trend of annual mean of daily maximum temperature
+#      cell_methods: "time: trend over years"
+#    input:
+#      da: tasmax
+#    parameters:
+#      group: time
+#      output: pvalue
+#  tasmax_linreg_stderr_ann:
+#    base: xclim.sdba.properties.trend
+#    cf_attrs:
+#      long_name: standard error of linear trend of annual mean of daily maximum temperature
+#      cell_methods: "time: trend over years"
+#    input:
+#      da: tasmax
+#    parameters:
+#      group: time
+#      output: stderr
