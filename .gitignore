@@ -137,5 +137,6 @@ dmypy.json
 /notebooks/checkup.ipynb
 /.idea/
 /paths_obs.yml
-/notebooks/Testing_reference_sim_bcs.ipynb
-/notebooks/Testing_reference_sim_bsc_std.ipynb
+/image/var_inter_monthly_climate_monthly_eq.png
+/image/var_intra_monthly_eq.png
+/marilyn_ferland/
