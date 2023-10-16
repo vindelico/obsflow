@@ -417,7 +417,9 @@ if __name__ == "__main__":
                         # compute properties for period when contained in data
                         if ds_input.time.dt.year.min() <= int(period[0]) and \
                            ds_input.time.dt.year.max() >= int(period[1]):
+
                             logger.info(f"Computing climatology for {key_input} for period {period}")
+
                             # Calculate climatological mean
                             ds_mean = xs.climatological_mean(
                                 ds=ds_input,
