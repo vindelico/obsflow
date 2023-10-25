@@ -4,6 +4,7 @@ import logging
 import os
 
 import xarray as xr
+import numpy as np
 from dask import config as dskconf
 from dask.distributed import Client
 from dask.diagnostics import ProgressBar
@@ -290,7 +291,7 @@ if __name__ == "__main__":
                                 continue
                             # compute properties for period
                             if ds_input.time.dt.year.min() <= int(period[0]) and \
-                               ds_input.time.dt.year.max() >= int(period[1]):
+                                    ds_input.time.dt.year.max() >= int(period[1]):
                                 logger.info(f"Computing properties for {key_input} for period {period}")
                                 periods_props, _ = xs.properties_and_measures(
                                     ds=ds_input,
@@ -305,7 +306,7 @@ if __name__ == "__main__":
                                         {'month': list(xr.coding.cftime_offsets._MONTH_ABBREVIATIONS.values())})
                                 # TODO: does this work accross all datasets? Ok for now for ERA5-Land, AHCCD, ...
                                 if 'rlat' not in periods_props.coords.keys() and \
-                                   'rlon' not in periods_props.coords.keys():
+                                        'rlon' not in periods_props.coords.keys():
                                     periods_props['lat'].attrs = {"standard_name": "latitude", "axis": "Y"}
                                     periods_props['lon'].attrs = {"standard_name": "longitude", "axis": "X"}
                                 all_periods.append(periods_props)
@@ -416,12 +417,12 @@ if __name__ == "__main__":
                             continue
                         # compute properties for period when contained in data
                         if ds_input.time.dt.year.min() <= int(period[0]) and \
-                           ds_input.time.dt.year.max() >= int(period[1]):
+                                ds_input.time.dt.year.max() >= int(period[1]):
 
                             logger.info(f"Computing climatology for {key_input} for period {period}")
 
                             # Calculate climatological mean
-                            ds_mean = xs.climatological_mean(
+                            ds_mean = xs.aggregate.climatological_op(
                                 ds=ds_input,
                                 **CONFIG["aggregate"]["climatological_mean"],
                                 periods=period
@@ -432,33 +433,67 @@ if __name__ == "__main__":
                             all_periods.append(ds_mean)
 
                             # Calculate interannual standard deviation
+                            ds_input_std = ds_input.filter_by_attrs(
+                                description=lambda s: 'standard deviation' not in str(s)
+                            )
                             ds_std = xs.aggregate.climatological_op(
-                                ds=ds_input,
-                                **CONFIG["aggregate"]["climatological_op"],
+                                ds=ds_input_std,
+                                **CONFIG["aggregate"]["climatological_std"],
                                 periods=period
                             )
                             ds_std = ds_std.assign_coords(period=f'{period[0]}-{period[1]}')
                             ds_std = ds_std.expand_dims(dim='period')
                             ds_std = ds_std.drop_vars('horizon')
-                            ds_std = ds_std.rename(dict(zip(
-                                ds_std.data_vars,
-                                [f"{var}_std" for var in ds_std.data_vars]))
-                            )
+                            # ds_std = ds_std.rename(dict(zip(
+                            #     ds_std.data_vars,
+                            #     [f"{var}_std" for var in ds_std.data_vars]))
+                            # )
                             all_periods.append(ds_std)
 
-                            # Calculate intra monthly/seasonal standard deviation
-                            # ToDo
-
                             # Calculate climatological standard deviation
-                            # ToDo
+                            ds_std_clim = xr.Dataset()
+                            with xr.set_options(keep_attrs=True):
+                                for v_type in set([name.split('_')[0] for name in ds_input.data_vars]):
+                                    ds_std_varname = [n for n in ds_std.data_vars if v_type in n and 'std' in n]
+                                    if len(ds_std_varname) == 1:
+                                        ds_std_varname = ds_std_varname[0]
+                                    else:
+                                        raise ValueError(
+                                            f"More than one variable found containing "
+                                            f"'{v_type}' and 'std' in {ds_std_varname}"
+                                        )
+                                    ds_mean_varname = [n for n in ds_mean.data_vars if v_type in n and 'std' in n]
+                                    if len(ds_mean_varname) == 1:
+                                        ds_mean_varname = ds_mean_varname[0]
+                                    else:
+                                        raise ValueError(
+                                            f"More than one variable found containing "
+                                            f"'{v_type}' and 'std' in {ds_mean_varname}"
+                                        )
+                                    new_varname = f'{v_type}_std_clim-total'
+                                    ds_std_clim[new_varname] = np.sqrt(
+                                        np.square(ds_std[ds_std_varname]) +
+                                        np.square(ds_mean[ds_mean_varname])
+                                    )
+                                    ds_std_clim[new_varname].attrs['description'] = \
+                                        f"{xclim.core.formatting.default_formatter.format_field(ds_mean.attrs['cat:xrfreq'], 'adj').capitalize()} " \
+                                        f"total standard deviation of {' '.join(ds_std[ds_std_varname].attrs['description'].split(' ')[-3:])}"
+                                    ds_std_clim[new_varname].attrs['long_name'] = ds_std_clim[new_varname].attrs['description']
+
+                            all_periods.append(ds_std_clim)
 
                             # Calculate trends
-                            # ToDo
+                            # ds_trend = xs.aggregate.climatological_op(
+                            #     ds=ds_input,
+                            #     **CONFIG["aggregate"]["climatological_trend"],
+                            #     periods=period
+                            # )
 
                     # remove all dates so that periods can be merged
-                    new_time = {1: {'year': ['ANN']},
-                                4: {'season': ['MAM', 'JJA', 'SON', 'DJF']},
-                                12: {'month': list(xr.coding.cftime_offsets._MONTH_ABBREVIATIONS.values())},
+                    new_time = {
+                        1: {'year': ['ANN']},
+                        4: {'season': ['MAM', 'JJA', 'SON', 'DJF']},
+                        12: {'month': list(xr.coding.cftime_offsets._MONTH_ABBREVIATIONS.values())},
                     }
                     all_periods = [ds.rename({'time': list(new_time[ds.time.size].keys())[0]})
                                    .assign_coords(new_time[ds.time.size]) for ds in all_periods]
