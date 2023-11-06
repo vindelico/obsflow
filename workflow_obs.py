@@ -391,7 +391,7 @@ if __name__ == "__main__":
                         )
                         pcat.update_from_ds(ds=ds_ind, path=path_ind)
 
-    # --- CLIMATOLOGICAL MEAN ---
+    # --- CLIMATOLOGICAL OPERATIONS ---
     if "climatology" in CONFIG["tasks"]:
         # iterate over inputs
         ind_dict = pcat.search(**CONFIG["aggregate"]["input"]["obs"]).to_dataset_dict(
@@ -403,6 +403,9 @@ if __name__ == "__main__":
                 "xrfreq": ds_input.attrs["cat:xrfreq"],
                 "processing_level": "climatology",
             }
+            # only do ERA5 for now!
+            if not all(s in key_input for s in ['ERA5', 'MS']):
+                continue
 
             if not pcat.exists_in_cat(**cur):
                 with (
@@ -422,6 +425,7 @@ if __name__ == "__main__":
                             logger.info(f"Computing climatology for {key_input} for period {period}")
 
                             # Calculate climatological mean
+                            logger.info(f"Computing climatological mean for {key_input} for period {period}")
                             ds_mean = xs.aggregate.climatological_op(
                                 ds=ds_input,
                                 **CONFIG["aggregate"]["climatological_mean"],
@@ -451,6 +455,9 @@ if __name__ == "__main__":
                             all_periods.append(ds_std)
 
                             # Calculate climatological standard deviation
+                            logger.info(
+                                f"Computing climatological standard deviation for {key_input} for period {period}")
+                            # ToDo: This could be generic to work for all terms involved, depending on the input freq
                             ds_std_clim = xr.Dataset()
                             with xr.set_options(keep_attrs=True):
                                 for v_type in set([name.split('_')[0] for name in ds_input.data_vars]):
@@ -478,16 +485,42 @@ if __name__ == "__main__":
                                     ds_std_clim[new_varname].attrs['description'] = \
                                         f"{xclim.core.formatting.default_formatter.format_field(ds_mean.attrs['cat:xrfreq'], 'adj').capitalize()} " \
                                         f"total standard deviation of {' '.join(ds_std[ds_std_varname].attrs['description'].split(' ')[-3:])}"
-                                    ds_std_clim[new_varname].attrs['long_name'] = ds_std_clim[new_varname].attrs['description']
+                                    ds_std_clim[new_varname].attrs['long_name'] = ds_std_clim[new_varname].attrs[
+                                        'description']
 
                             all_periods.append(ds_std_clim)
 
                             # Calculate trends
-                            # ds_trend = xs.aggregate.climatological_op(
-                            #     ds=ds_input,
-                            #     **CONFIG["aggregate"]["climatological_trend"],
-                            #     periods=period
-                            # )
+                            logger.info(f"Computing climatological linregress for {key_input} for period {period}")
+
+                            ds_input_trend = ds_input[[v for v in ds_input.data_vars if 'mean' in v]].isel(
+                                lat=slice(100, 105), lon=slice(100, 105),
+                            )
+                            ds_trend = xs.aggregate.climatological_op(
+                                ds=ds_input_trend,
+                                **CONFIG["aggregate"]["climatological_trend"],
+                                periods=[['1981', '2010'], ['1991', '2020']],
+                                window=30,  # ToDo clean this!!!
+                                # min_periods=28,
+                                # stride=10
+                            )
+                            ds_trend = xs.aggregate.climatological_op(
+                                ds=ds_input_trend,
+                                **CONFIG["aggregate"]["climatological_trend"],
+                                periods=[['1951', '2000']],
+                                window=30,  # ToDo clean this!!!
+                                # min_periods=28,
+                                stride=10
+                            )
+                            ds_trend = xs.aggregate.climatological_op(
+                                ds=ds_input_trend,
+                                **CONFIG["aggregate"]["climatological_trend"],
+                                periods=[['1951', '2000']],
+                                window=30,  # ToDo clean this!!!
+                                # min_periods=28,
+                                # stride=10
+                            )
+                            all_periods.append(ds_trend)
 
                     # remove all dates so that periods can be merged
                     new_time = {

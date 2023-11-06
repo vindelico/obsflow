@@ -140,3 +140,5 @@ dmypy.json
 /image/var_inter_monthly_climate_monthly_eq.png
 /image/var_intra_monthly_eq.png
 /marilyn_ferland/
+/notebooks/ulinregress_dev.ipynb
+/notebooks/Trying_Things.ipynb
