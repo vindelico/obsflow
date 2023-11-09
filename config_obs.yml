@@ -426,26 +426,28 @@ aggregate:
     n_workers: 10
     threads_per_worker: 4
     memory_limit: "12GB"
-  # ToDo: coorrect the first period here!!!
-  periods: [['1951', '2000'], ['1961', '1990'], ['1971', '2000'], ['1981', '2010'], ['1991', '2020'], ['1991', '2018'], ['1980', '1985']]
+  periods: [['1951', '1980'], ['1961', '1990'], ['1971', '2000'], ['1981', '2010'], ['1991', '2020'], ['1991', '2018'], ['1980', '1985']]
   input:
     obs:
       processing_level:
          - indicators
   climatological_mean: # automatically passed to the function
     op: mean
-    stride: 5
-    window: 30
+#    stride: 5
+#    window: 30
+#    min_periods: 28
     to_level: climatology
   climatological_std: # automatically passed to the function
     op: std
-    stride: 5
-    window: 30
+#    stride: 5
+#    window: 30
+#    min_periods: 28
     to_level: climatology
   climatological_trend: # automatically passed to the function
     op: linregress
-    #stride: 5
-    #window: 30
+#    stride: 5
+#    window: 30
+#    min_periods: 28
     to_level: climatology
   save:
     mode: 'o'

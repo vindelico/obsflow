@@ -397,21 +397,21 @@ if __name__ == "__main__":
         ind_dict = pcat.search(**CONFIG["aggregate"]["input"]["obs"]).to_dataset_dict(
             **tdd
         )
-        for key_input, ds_input in ind_dict.items():
+        for key_input, ds_input in sorted(ind_dict.items()):
             cur = {
                 "id": ds_input.attrs["cat:id"],
                 "xrfreq": ds_input.attrs["cat:xrfreq"],
                 "processing_level": "climatology",
             }
-            # only do ERA5 for now!
-            if not all(s in key_input for s in ['ERA5', 'MS']):
-                continue
+            # only do ERA5 for now and crop it!
+            # if not all(s in key_input for s in ['ERA5', 'MS']):
+            #     continue
+            # ds_input = ds_input.isel(lat=slice(100, 125), lon=slice(100, 120), )
 
             if not pcat.exists_in_cat(**cur):
-                with (
-                    Client(**CONFIG["aggregate"]["dask"], **daskkws),
-                    xs.measure_time(name=f"climatology {key_input}", logger=logger),
-                ):
+                with (Client(**CONFIG["aggregate"]["dask"], **daskkws),
+                      xs.measure_time(name=f"climatology {key_input}", logger=logger)
+                      ):
                     # compute climatological mean
                     all_periods = []
                     for period in CONFIG["aggregate"]["periods"]:
@@ -422,9 +422,12 @@ if __name__ == "__main__":
                         if ds_input.time.dt.year.min() <= int(period[0]) and \
                                 ds_input.time.dt.year.max() >= int(period[1]):
 
+
+
+
                             logger.info(f"Computing climatology for {key_input} for period {period}")
 
-                            # Calculate climatological mean
+                            # Calculate climatological mean --------------------------------
                             logger.info(f"Computing climatological mean for {key_input} for period {period}")
                             ds_mean = xs.aggregate.climatological_op(
                                 ds=ds_input,
@@ -436,7 +439,8 @@ if __name__ == "__main__":
                             ds_mean = ds_mean.drop_vars('horizon')
                             all_periods.append(ds_mean)
 
-                            # Calculate interannual standard deviation
+                            # Calculate interannual standard deviation ---------------------
+                            logger.info(f"Computing interannual standard deviation for {key_input} for period {period}")
                             ds_input_std = ds_input.filter_by_attrs(
                                 description=lambda s: 'standard deviation' not in str(s)
                             )
@@ -448,19 +452,16 @@ if __name__ == "__main__":
                             ds_std = ds_std.assign_coords(period=f'{period[0]}-{period[1]}')
                             ds_std = ds_std.expand_dims(dim='period')
                             ds_std = ds_std.drop_vars('horizon')
-                            # ds_std = ds_std.rename(dict(zip(
-                            #     ds_std.data_vars,
-                            #     [f"{var}_std" for var in ds_std.data_vars]))
-                            # )
                             all_periods.append(ds_std)
 
-                            # Calculate climatological standard deviation
+                            # Calculate climatological standard deviation --------------------
                             logger.info(
                                 f"Computing climatological standard deviation for {key_input} for period {period}")
                             # ToDo: This could be generic to work for all terms involved, depending on the input freq
                             ds_std_clim = xr.Dataset()
                             with xr.set_options(keep_attrs=True):
                                 for v_type in set([name.split('_')[0] for name in ds_input.data_vars]):
+                                    # pick the interannual standard deviation of the variable
                                     ds_std_varname = [n for n in ds_std.data_vars if v_type in n and 'std' in n]
                                     if len(ds_std_varname) == 1:
                                         ds_std_varname = ds_std_varname[0]
@@ -469,6 +470,7 @@ if __name__ == "__main__":
                                             f"More than one variable found containing "
                                             f"'{v_type}' and 'std' in {ds_std_varname}"
                                         )
+                                    # pick the mean of intra-annual/monthly/seasonal standard deviation of the variable
                                     ds_mean_varname = [n for n in ds_mean.data_vars if v_type in n and 'std' in n]
                                     if len(ds_mean_varname) == 1:
                                         ds_mean_varname = ds_mean_varname[0]
@@ -477,6 +479,7 @@ if __name__ == "__main__":
                                             f"More than one variable found containing "
                                             f"'{v_type}' and 'std' in {ds_mean_varname}"
                                         )
+                                    # calculate the total climatological standard deviation
                                     new_varname = f'{v_type}_std_clim-total'
                                     ds_std_clim[new_varname] = np.sqrt(
                                         np.square(ds_std[ds_std_varname]) +
@@ -487,39 +490,25 @@ if __name__ == "__main__":
                                         f"total standard deviation of {' '.join(ds_std[ds_std_varname].attrs['description'].split(' ')[-3:])}"
                                     ds_std_clim[new_varname].attrs['long_name'] = ds_std_clim[new_varname].attrs[
                                         'description']
-
                             all_periods.append(ds_std_clim)
 
-                            # Calculate trends
+                            # Calculate trends -----------------------------------------------
                             logger.info(f"Computing climatological linregress for {key_input} for period {period}")
 
-                            ds_input_trend = ds_input[[v for v in ds_input.data_vars if 'mean' in v]].isel(
-                                lat=slice(100, 105), lon=slice(100, 105),
-                            )
+                            # for testing DJF in seasonal change the period - ToDo: remove!
+                            # if 'QS-DEC' in key_input:
+                            #     period = [str(int(year) - 1) for year in period]
+
+                            ds_input_trend = ds_input[[v for v in ds_input.data_vars if 'mean' in v]]
+                            # .isel(lat=slice(100, 105), lon=slice(100, 105),)
                             ds_trend = xs.aggregate.climatological_op(
                                 ds=ds_input_trend,
                                 **CONFIG["aggregate"]["climatological_trend"],
-                                periods=[['1981', '2010'], ['1991', '2020']],
-                                window=30,  # ToDo clean this!!!
-                                # min_periods=28,
-                                # stride=10
+                                periods=period,
                             )
-                            ds_trend = xs.aggregate.climatological_op(
-                                ds=ds_input_trend,
-                                **CONFIG["aggregate"]["climatological_trend"],
-                                periods=[['1951', '2000']],
-                                window=30,  # ToDo clean this!!!
-                                # min_periods=28,
-                                stride=10
-                            )
-                            ds_trend = xs.aggregate.climatological_op(
-                                ds=ds_input_trend,
-                                **CONFIG["aggregate"]["climatological_trend"],
-                                periods=[['1951', '2000']],
-                                window=30,  # ToDo clean this!!!
-                                # min_periods=28,
-                                # stride=10
-                            )
+                            ds_trend = ds_trend.assign_coords(period=f'{period[0]}-{period[1]}')
+                            ds_trend = ds_trend.expand_dims(dim='period')
+                            ds_trend = ds_trend.drop_vars('horizon')
                             all_periods.append(ds_trend)
 
                     # remove all dates so that periods can be merged
@@ -531,9 +520,11 @@ if __name__ == "__main__":
                     all_periods = [ds.rename({'time': list(new_time[ds.time.size].keys())[0]})
                                    .assign_coords(new_time[ds.time.size]) for ds in all_periods]
                     logger.info(f"Merging climatology of periods for {key_input}")
+                    # client.scatter(all_periods)
                     ds_clim = xr.merge(all_periods, combine_attrs='override')
 
                     # save to zarr
+                    # client.scatter(ds_clim)
                     path = f"{CONFIG['paths']['task']}".format(**cur)
                     xs.save_to_zarr(ds_clim, path, **CONFIG["aggregate"]["save"])
                     pcat.update_from_ds(ds=ds_clim, path=path)
