@@ -131,7 +131,7 @@ dmypy.json
 /pre_workflow_from_portail-ing/
 /notebooks/1_catalog.ipynb
 /notebooks/2_getting_started.ipynb
-/notebooks/just_tests_extract_diagnostics.ipynb
+/notebooks/Tests_extract_diagnostics.ipynb
 /just_tests.py
 /marilyn_ferland/clean_trend.ipynb
 /notebooks/checkup.ipynb
