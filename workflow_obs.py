@@ -404,7 +404,7 @@ if __name__ == "__main__":
                 "processing_level": "climatology",
             }
             # only do ERA5 for now and crop it!
-            if not all(s in key_input for s in ['ERA5', 'AS-JAN']):
+            if not all(s in key_input for s in ['ERA5', 'MS']):
                 continue
             # ds_input = ds_input.isel(lat=slice(100, 125), lon=slice(100, 120), )
 
