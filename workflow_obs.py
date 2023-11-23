@@ -141,51 +141,6 @@ if __name__ == "__main__":
                 xs.save_to_zarr(ds=ds_regrid, filename=path, **CONFIG["regrid"]["save"])
                 pcat.update_from_ds(ds=ds_regrid, path=path, info_dict=cur)
 
-    # --- BIAS ADJUST ---
-    if "biasadjust" in CONFIG["tasks"]:
-        # iter over each variable that needs to be adjusted
-        for var, ba_dict in CONFIG["biasadjust"].items():
-            # get all input simulations and iter over them
-            dict_sim = pcat.search(**ba_dict["sim_inputs"]).to_dataset_dict(**tdd)
-            for id_sim, ds_sim in dict_sim.items():
-                cur = {
-                    "id": ds_sim.attrs["cat:id"],
-                    "xrfreq": ds_sim.attrs["cat:xrfreq"],
-                    "processing_level": "biasadjusted",
-                    "variable": var,
-                }
-                if not pcat.exists_in_cat(**cur):
-                    with (
-                        Client(**ba_dict["dask"], **daskkws),
-                        xs.measure_time(
-                            name=f" bias adjust {var} {id_sim}", logger=logger
-                        ),
-                    ):
-                        # get reference
-                        ds_ref = pcat.search(**ba_dict["ref_input"]).to_dataset(**tdd)
-                        # training
-                        ds_tr = xs.train(
-                            dref=ds_ref,
-                            dhist=ds_sim,
-                            var=[var],
-                            **ba_dict["xscen_train"],
-                        )
-
-                        # might need to save ds_tr in between if data is too big.
-
-                        # adjusting
-                        ds_scen = xs.adjust(
-                            dsim=ds_sim,
-                            dtrain=ds_tr,
-                            to_level="biasadjusted",
-                            **ba_dict["xscen_adjust"],
-                        )
-
-                        # save and update
-                        path = f"{CONFIG['paths']['ba']}".format(**cur)
-                        xs.save_to_zarr(ds=ds_scen, filename=path, **ba_dict["save"])
-                        pcat.update_from_ds(ds=ds_scen, path=path)
-
     # --- CLEAN UP ---
     if "cleanup" in CONFIG["tasks"]:
         # get all datasets to clean up and iter
@@ -216,147 +171,6 @@ if __name__ == "__main__":
                         path = f"{CONFIG['paths']['task']}".format(**cur)
                         xs.save_to_zarr(ds_clean, path, **CONFIG["cleanup"]["save"])
                         pcat.update_from_ds(ds=ds_clean, path=path)
-
-    # --- RECHUNK and store final daily data ---
-    if "rechunk" in CONFIG["tasks"]:
-        # get inputs and iter over them
-        dict_input = pcat.search(**CONFIG["rechunk"]["inputs"]).to_dataset_dict(**tdd)
-        for key_input, ds_input in dict_input.items():
-            cur = {
-                "id": ds_input.attrs["cat:id"],
-                "xrfreq": ds_input.attrs["cat:xrfreq"],
-                "domain": ds_input.attrs["cat:domain"],
-                "processing_level": "final",
-            }
-            if not pcat.exists_in_cat(**cur):
-                with (
-                    Client(**CONFIG["rechunk"]["dask"], **daskkws),
-                    xs.measure_time(name=f"rechunk {key_input}", logger=logger),
-                ):
-                    # final path for the data
-                    path_out = f"{CONFIG['paths']['task']}".format(**cur)
-
-                    # rechunk and put in final path
-                    xs.io.rechunk(
-                        path_in=ds_input.attrs["cat:path"],
-                        path_out=path_out,
-                        **CONFIG["rechunk"]["xscen_rechunk"],
-                    )
-
-                    # update catalog
-                    ds = xr.open_zarr(path_out)
-                    pcat.update_from_ds(
-                        ds=ds,
-                        path=str(path_out),
-                        info_dict={"processing_level": "final"},
-                    )
-
-    # --- DIAGNOSTICS ---
-    if "diagnostics" in CONFIG["tasks"]:
-        # compute properties (and measures) on different kinds of data (ref, sim,scen)
-        for kind, kind_dict in CONFIG["diagnostics"]["kind"].items():
-            # iterate on inputs
-            dict_input = pcat.search(**kind_dict["inputs"]).to_dataset_dict(**tdd)
-            my_kinds_properties = copy(kind_dict["properties_and_measures"]["properties"])
-            for key_input, ds_input in dict_input.items():
-                cur = {
-                    "id": ds_input.attrs["cat:id"],
-                    "processing_level": kind_dict["properties_and_measures"].get(
-                        "to_level_prop", "diag-properties"
-                    ),
-                    "xrfreq": "fx",
-                }
-
-                if not pcat.exists_in_cat(**cur):
-                    with (
-                        Client(**CONFIG["diagnostics"]["dask"], **daskkws),
-                        xs.measure_time(name=f"diagnostics {key_input}", logger=logger),
-                    ):
-                        # get the reference for the measures
-                        dref_for_measure = None
-                        if "dref_for_measure" in kind_dict:
-                            dref_for_measure = pcat.search(
-                                **kind_dict["dref_for_measure"],
-                            ).to_dataset(**tdd)
-
-                        # filter for properties for which variables are available
-                        kind_dict["properties_and_measures"]["properties"] = \
-                            xs.indicators.select_inds_for_avail_vars(ds_input, my_kinds_properties)
-
-                        # compute properties per period
-                        all_periods = []
-                        for period in CONFIG["diagnostics"]["periods"]:
-                            # skip all data except bcs for period 1980-1985
-                            if int(period[0]) == 1980 and int(period[1]) == 1985 and 'bcs' not in key_input:
-                                continue
-                            # compute properties for period
-                            if ds_input.time.dt.year.min() <= int(period[0]) and \
-                                    ds_input.time.dt.year.max() >= int(period[1]):
-                                logger.info(f"Computing properties for {key_input} for period {period}")
-                                periods_props, _ = xs.properties_and_measures(
-                                    ds=ds_input,
-                                    dref_for_measure=dref_for_measure,
-                                    **kind_dict["properties_and_measures"],
-                                    period=period,
-                                )
-                                periods_props = periods_props.assign_coords(period=f'{period[0]}-{period[1]}')
-                                periods_props = periods_props.expand_dims(dim='period')
-                                if 'month' in periods_props.coords.keys():
-                                    periods_props = periods_props.assign_coords(
-                                        {'month': list(xr.coding.cftime_offsets._MONTH_ABBREVIATIONS.values())})
-                                # TODO: does this work accross all datasets? Ok for now for ERA5-Land, AHCCD, ...
-                                if 'rlat' not in periods_props.coords.keys() and \
-                                        'rlon' not in periods_props.coords.keys():
-                                    periods_props['lat'].attrs = {"standard_name": "latitude", "axis": "Y"}
-                                    periods_props['lon'].attrs = {"standard_name": "longitude", "axis": "X"}
-                                all_periods.append(periods_props)
-
-                        logger.info(f"Merging properties of periods for {key_input}")
-                        prop = xr.merge(all_periods, combine_attrs='override')
-
-                        # save to zarr
-                        # don't save if empty
-                        if len(prop.data_vars) > 0:
-                            path_diag = f"{CONFIG['paths']['task']}".format(**cur)
-                            xs.save_to_zarr(prop, path_diag, **kind_dict["save"])
-                            pcat.update_from_ds(ds=prop, path=path_diag)
-
-        # # summary of diagnostics
-        # get sim measures
-        meas_dict = pcat.search(processing_level="diag-measures-sim").to_dataset_dict(
-            **tdd
-        )
-        for id_meas, ds_meas_sim in meas_dict.items():
-            cur = {
-                "id": ds_meas_sim.attrs["cat:id"],
-                "processing_level": "diag-improved",
-                "xrfreq": "fx",
-            }
-            if not pcat.exists_in_cat(**cur):
-                with (
-                    Client(**CONFIG["diagnostics"]["dask"], **daskkws),
-                    xs.measure_time(name=f"summary diag {cur['id']}", logger=logger),
-                ):
-                    # get scen meas associated with sim
-                    meas_datasets = {}
-                    meas_datasets["sim"] = ds_meas_sim
-                    meas_datasets["scen"] = pcat.search(
-                        processing_level="diag-measures-scen",
-                        id=cur["id"],
-                    ).to_dataset(**tdd)
-
-                    # compute heatmap
-                    hm = xs.diagnostics.measures_heatmap(meas_datasets)
-
-                    # compute improved
-                    ip = xs.diagnostics.measures_improvement(meas_datasets)
-
-                    # save and update
-                    for ds in [hm, ip]:
-                        cur["processing_level"] = ds.attrs["cat:processing_level"]
-                        path_diag = f"{CONFIG['paths']['task']}".format(**cur)
-                        xs.save_to_zarr(ds=ds, filename=path_diag, mode="o")
-                        pcat.update_from_ds(ds=ds, path=path_diag)
 
     # --- INDICATORS ---
     if "indicators" in CONFIG["tasks"]:
@@ -530,30 +344,18 @@ if __name__ == "__main__":
                     xs.save_to_zarr(ds_clim, path, **CONFIG["aggregate"]["save"])
                     pcat.update_from_ds(ds=ds_clim, path=path)
 
-    # --- DELTAS ---
-    if "delta" in CONFIG["tasks"]:
-        # iterate over inputs
-        ind_dict = pcat.search(**CONFIG["aggregate"]["input"]["delta"]).to_dataset_dict(
+    # --- PLOTTING ---
+    if "plotting" in CONFIG["tasks"]:
+        # get input and iter
+        dict_input = pcat.search(**CONFIG["plotting"]["inputs"]).to_dataset_dict(
             **tdd
         )
-        for key_input, ds_input in ind_dict.items():
-            cur = {
-                "id": ds_input.attrs["cat:id"],
-                "xrfreq": ds_input.attrs["cat:xrfreq"],
-                "processing_level": "delta",
-            }
-            if not pcat.exists_in_cat(**cur):
-                with (
-                    Client(**CONFIG["aggregate"]["dask"], **daskkws),
-                    xs.measure_time(name=f"delta {key_input}", logger=logger),
-                ):
-                    # compute deltas
-                    ds_delta = xs.aggregate.compute_deltas(ds=ds_input)
-
-                    # save to zarr
-                    path = f"{CONFIG['paths']['task']}".format(**cur)
-                    xs.save_to_zarr(ds_delta, path, **CONFIG["aggregate"]["save"])
-                    pcat.update_from_ds(ds=ds_delta, path=path)
+        for key_input, ds_input in dict_input.items():
+            with (
+                Client(**CONFIG["plotting"]["dask"], **daskkws),
+                xs.measure_time(name=f"plotting {key_input}", logger=logger),
+            ):
+                ...
 
     # --- ENSEMBLES ---
     if "ensembles" in CONFIG["tasks"]:
@@ -600,5 +402,5 @@ if __name__ == "__main__":
 
     xs.send_mail(
         subject="ObsFlow - Message",
-        msg="Congratulations! All tasks of the workflow are done!",
+        msg="Congratulations! All tasks of the workflow were completed!",
     )
