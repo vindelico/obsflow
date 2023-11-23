@@ -391,7 +391,7 @@ if __name__ == "__main__":
                         )
                         pcat.update_from_ds(ds=ds_ind, path=path_ind)
 
-    # --- CLIMATOLOGICAL OPERATIONS ---
+    # --- CLIMATOLOGIES ---
     if "climatology" in CONFIG["tasks"]:
         # iterate over inputs
         ind_dict = pcat.search(**CONFIG["aggregate"]["input"]["obs"]).to_dataset_dict(
