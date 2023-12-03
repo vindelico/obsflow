@@ -15,7 +15,7 @@ tasks:
   #- regrid # Regrid the simulation onto the reference grid.
   #- cleanup # Join each individually adjusted variable back in one scenario dataset and clean up other details.
   #- indicators # Compute xclim indicators on the scenario.
-  - climatology # Compute climatological operations for the indicators (mean, std, trend).
+  #- climatologies # Compute climatological operations for the indicators (mean, std, trend).
   - plotting # Make plots of results from climatological operations.
   #- ensembles # Compute the ensemble statistics on indicators, climatology and deltas.
 
@@ -107,47 +107,47 @@ extract:
       rechunk:
         time: -1
         station: 50
-  # simulations
-  simulation:
-    dask:
-      n_workers: 2
-      threads_per_worker: 3
-      memory_limit: 10GB
-    search_data_catalogs:
-      #match_hist_and_fut: True
-      allow_resampling: True
-      #allow_conversion: True
-      variables_and_freqs:
-        #pr: D
-        tas: 3H
-      periods: &sim_period
-        - '1979'
-        - '1985'
-      other_search_criteria: # put the simulations you want here
-        code:
-          - bcs
-    extract_dataset:
-      xr_combine_kwargs:
-        combine_attrs: override
-      xr_open_kwargs:
-        drop_variables:
-          - height
-        chunks:
-          lat: 10
-          lon: 10
-          time: 365
-      region: # all
-    # floor: D  # ???
-    save:
-      mode: o
-      encoding:
-        tas: #*f32
-          dtype: float32
-        #pr: *f32
-      rechunk:
-        time: -1
-        X: 40
-        Y: 40
+#  # simulations
+#  simulation:
+#    dask:
+#      n_workers: 2
+#      threads_per_worker: 3
+#      memory_limit: 10GB
+#    search_data_catalogs:
+#      #match_hist_and_fut: True
+#      allow_resampling: True
+#      #allow_conversion: True
+#      variables_and_freqs:
+#        #pr: D
+#        tas: 3H
+#      periods: &sim_period
+#        - '1979'
+#        - '1985'
+#      other_search_criteria: # put the simulations you want here
+#        code:
+#          - bcs
+#    extract_dataset:
+#      xr_combine_kwargs:
+#        combine_attrs: override
+#      xr_open_kwargs:
+#        drop_variables:
+#          - height
+#        chunks:
+#          lat: 10
+#          lon: 10
+#          time: 365
+#      region: # all
+#    # floor: D  # ???
+#    save:
+#      mode: o
+#      encoding:
+#        tas: #*f32
+#          dtype: float32
+#        #pr: *f32
+#      rechunk:
+#        time: -1
+#        X: 40
+#        Y: 40
 
 
 # regrid
@@ -238,7 +238,8 @@ aggregate:
     n_workers: 10
     threads_per_worker: 4
     memory_limit: "12GB"
-  periods: [['1951', '1980'], ['1961', '1990'], ['1971', '2000'], ['1981', '2010'], ['1991', '2020'], ['1991', '2018'], ['1980', '1985']]
+  periods: [['1951', '1980'], ['1961', '1990'], ['1971', '2000'],
+            ['1981', '2010'], ['1991', '2020'], ['1991', '2018']] # ['1980', '1985']]
   input:
     obs:
       processing_level:
@@ -264,8 +265,16 @@ aggregate:
   save:
     mode: 'o'
 
-#plotting:
-#   dask:
+plotting:
+  dask:
+    n_workers: 5
+    threads_per_worker: 4
+    memory_limit: "12GB"
+  periods: [['1951', '1980'], ['1961', '1990'], ['1971', '2000'],
+            ['1981', '2010'], ['1991', '2020'], ['1991', '2018']]
+  input:
+    data:
+      processing_level: climatology
 #   style:
 
 #ensembles:
