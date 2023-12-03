@@ -216,11 +216,6 @@ if __name__ == "__main__":
                 "xrfreq": ds_input.attrs["cat:xrfreq"],
                 "processing_level": "climatology",
             }
-            # filter for testing
-            # only do ERA5 for now and crop it!
-            # if not all(s in key_input for s in ['ERA5', 'MS']):
-            #     continue
-            # ds_input = ds_input.isel(lat=slice(100, 125), lon=slice(100, 120), )
 
             if not pcat.exists_in_cat(**cur):
                 with (Client(**CONFIG["aggregate"]["dask"], **daskkws) as client,
@@ -229,9 +224,6 @@ if __name__ == "__main__":
                     # compute climatological mean
                     all_periods = []
                     for period in CONFIG["aggregate"]["periods"]:
-                        # # skip all data except bcs for period 1980-1985 ToDo: remove when tests finished
-                        # if int(period[0]) == 1980 and int(period[1]) == 1985 and 'bcs' not in key_input:
-                        #     continue
                         # compute properties for period when contained in data
                         if ds_input.time.dt.year.min() <= int(period[0]) and \
                                 ds_input.time.dt.year.max() >= int(period[1]):
@@ -247,9 +239,6 @@ if __name__ == "__main__":
                                 rename_variables=True,
                                 periods_as_dim=True,
                             )
-                            # ds_mean = ds_mean.assign_coords(period=f'{period[0]}-{period[1]}')
-                            # ds_mean = ds_mean.expand_dims(dim='period')
-                            # ds_mean = ds_mean.drop_vars('horizon')
                             all_periods.append(ds_mean)
 
                             # Calculate interannual standard deviation, skipping intra-[freq] std --------------------
@@ -264,9 +253,6 @@ if __name__ == "__main__":
                                 rename_variables=True,
                                 periods_as_dim=True,
                             )
-                            # ds_std = ds_std.assign_coords(period=f'{period[0]}-{period[1]}')
-                            # ds_std = ds_std.expand_dims(dim='period')
-                            # ds_std = ds_std.drop_vars('horizon')
                             all_periods.append(ds_std)
 
                             # Calculate climatological standard deviation --------------------
@@ -311,12 +297,7 @@ if __name__ == "__main__":
                             # Calculate trends -----------------------------------------------
                             logger.info(f"Computing climatological linregress for {key_input} for period {period}")
 
-                            # for testing DJF in seasonal change the period - ToDo: remove!
-                            # if 'QS-DEC' in key_input:
-                            #     period = [str(int(year) - 1) for year in period]
-
                             ds_input_trend = ds_input[[v for v in ds_input.data_vars if 'mean' in v]]
-                            # .isel(lat=slice(100, 105), lon=slice(100, 105), )
                             ds_trend = xs.aggregate.climatological_op(
                                 ds=ds_input_trend,
                                 **CONFIG["aggregate"]["climatological_trend"],
@@ -325,25 +306,13 @@ if __name__ == "__main__":
                                 rename_variables=True,
                                 periods_as_dim=True,
                             )
-                            # ds_trend = ds_trend.assign_coords(period=f'{period[0]}-{period[1]}')
-                            # ds_trend = ds_trend.expand_dims(dim='period')
-                            # ds_trend = ds_trend.drop_vars('horizon')
                             all_periods.append(ds_trend)
 
-                    # # remove all dates so that periods can be merged
-                    # new_time = {
-                    #     1: {'year': ['ANN']},
-                    #     4: {'season': ['MAM', 'JJA', 'SON', 'DJF']},
-                    #     12: {'month': list(xr.coding.cftime_offsets._MONTH_ABBREVIATIONS.values())},
-                    # }  # calendar.month_abbr[1:]
-                    # all_periods = [ds.rename({'time': list(new_time[ds.time.size].keys())[0]})
-                    #                .assign_coords(new_time[ds.time.size]) for ds in all_periods]
                     logger.info(f"Merging climatology of periods for {key_input}")
-                    #all_periods = client.scatter(all_periods)
+                    # all_periods = client.scatter(all_periods)
                     ds_clim = xr.merge(all_periods, combine_attrs='override')
 
                     # save to zarr
-                    # client.scatter(ds_clim)
                     path = f"{CONFIG['paths']['task']}".format(**cur)
                     xs.save_to_zarr(ds_clim, path, **CONFIG["aggregate"]["save"])
                     pcat.update_from_ds(ds=ds_clim.drop_vars(['time']), path=path)
@@ -364,22 +333,22 @@ if __name__ == "__main__":
                 import cartopy.crs as ccrs
                 import figanos.matplotlib as fg
 
-                for period in [['haha', 'hihihi']]: #CONFIG["plotting"]["periods"]:
+                for period in CONFIG["plotting"]["periods"]:
                     for ind in ds_input.data_vars.values():
                         plot_id = f"{ind.attrs['long_name'].lower()} - {ds_input.attrs['source']} ({period})"
                         # logger.info(f"Doing {plot_id}")
-                        print(f"{plot_id}")
+                        print(f"{ind.name} - {plot_id}")
 
                         # # use Ouranos style
                         # fg.utils.set_mpl_style('ouranos')
-                        # # Selecting a time and slicing our starting Dataset
-                        #
                         # # defining our projection.
                         # projection = ccrs.LambertConformal()
                         # ds = ds_input['tg_mean_clim_mean'].isel(period=0, year=0)
-                        # fg.gridmap(data, projection=projection,
-                        #           features=['coastline', 'ocean'], frame=True, show_time='lower left')
-
+                        # fg.gridmap(data=ds,
+                        #            projection=projection,
+                        #            features=['coastline', 'ocean'],
+                        #            frame=True,
+                        #            )
 
     # --- ENSEMBLES ---
     if "ensembles" in CONFIG["tasks"]:

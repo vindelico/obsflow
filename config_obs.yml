@@ -275,7 +275,100 @@ plotting:
   input:
     data:
       processing_level: climatology
-#   style:
+    freqs:
+      AS-JAN:
+        year:
+          col: None
+          col_wrap: None
+      QS-DEC:
+        season:
+          col: season
+          col_wrap: 2
+      MS:
+        month:
+          col: month
+          col_wrap: 4
+    # mean
+    tg_mean_clim_mean: &mean
+      agg_operation: mean
+      label: ''
+      limits:
+        year:
+          vmin: -15
+          vmax: 15
+        season:
+          vmin: -30
+          vmax: 30
+        month:
+          vmin: -30
+          vmax: 30
+      levels: 21
+      ticks: linspace
+      convert_units: degC
+#      cmap: RdBu_r
+    tn_mean_clim_mean: *mean
+    tx_mean_clim_mean: *mean
+    # interannual
+    tg_mean_clim_std: &std_inter
+      agg_operation: std
+      label: interannual
+      limits:
+        year: &vmin_vmax_std
+          vmin: 0
+          vmax: 5
+        season: *vmin_vmax_std
+        month: *vmin_vmax_std
+      levels: &levels_std
+        [0, 0.5, 1, 2, 3, 4, 5, 7.5, 10, 12.5, 15, 20]
+      ticks: *levels_std
+      convert_units: K
+#      cmap: afmhot_r
+    tn_mean_clim_std: *std_inter
+    tx_mean_clim_std: *std_inter
+    # intra
+    tg_std_clim_mean: &std_intra
+      agg_operation: std
+      label: intra
+      limits:
+        year: &vmin_vmax_std
+        season: *vmin_vmax_std
+        month: *vmin_vmax_std
+      levels: *levels_std
+      ticks: *levels_std
+      convert_units: K
+#      cmap: afmhot_r
+    tn_std_clim_mean: *std_intra
+    tx_std_clim_mean: *std_intra
+    # total
+    tg_std_clim_total: &std_total
+      agg_operation: std
+      label: total
+      limits:
+        year: &vmin_vmax_std
+        season: *vmin_vmax_std
+        month: *vmin_vmax_std
+      levels: *levels_std
+      ticks: *levels_std
+      convert_units: K
+#      cmap: afmhot_r
+    tn_std_clim_total: *std_total
+    tx_std_clim_total: *std_total
+    # trend
+    tg_mean_clim_linregress: &trend
+      agg_operation: linregress
+      label: trend
+      limits:
+        year: &vmin_vmax_trend
+          vmin: -2
+          vmax: 2
+        season: *vmin_vmax_trend
+        month: *vmin_vmax_trend
+        levels: 9
+        ticks: linspace
+        convert_units: degC/decade
+#        cmap: RdBu_r
+    tn_mean_clim_linregress: *trend
+    tx_mean_clim_linregress: *trend
 
 #ensembles:
 #  dask:
