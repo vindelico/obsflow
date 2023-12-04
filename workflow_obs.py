@@ -320,7 +320,7 @@ if __name__ == "__main__":
     # --- PLOTTING ---
     if "plotting" in CONFIG["tasks"]:
         # get input and iter
-        dict_input = pcat.search(**CONFIG["plotting"]["input"]["data"]).to_dataset_dict(**tdd)
+        dict_input = pcat.search(**CONFIG["plotting"]["data"]).to_dataset_dict(**tdd)
         for key_input, ds_input in sorted(dict_input.items()):
             with (
                 Client(**CONFIG["plotting"]["dask"], **daskkws),
@@ -328,27 +328,118 @@ if __name__ == "__main__":
             ):
                 # practice with monthly or seasonal data
                 # if 'AS-JAN' in key_input: continue
-                if 'ERA5' not in key_input: continue
+                if 'AHCCD' in key_input: continue
 
                 import cartopy.crs as ccrs
+                import matplotlib.pyplot as plt
                 import figanos.matplotlib as fg
+                from pathlib import Path
 
-                for period in CONFIG["plotting"]["periods"]:
+                fg.utils.set_mpl_style('ouranos')
+                projection = ccrs.LambertConformal()
+                freq = CONFIG['plotting']['xrfreq'][ds_input.attrs['cat:xrfreq']]
+                adj = {'year': 'annual', 'month': 'monthly', 'season': 'seasonal'}
+                freq_adj = adj[freq]
+
+                for period in ds_input.period.values:  #['1951-1980']:
                     for ind in ds_input.data_vars.values():
-                        plot_id = f"{ind.attrs['long_name'].lower()} - {ds_input.attrs['source']} ({period})"
-                        # logger.info(f"Doing {plot_id}")
-                        print(f"{ind.name} - {plot_id}")
 
-                        # # use Ouranos style
-                        # fg.utils.set_mpl_style('ouranos')
-                        # # defining our projection.
-                        # projection = ccrs.LambertConformal()
-                        # ds = ds_input['tg_mean_clim_mean'].isel(period=0, year=0)
-                        # fg.gridmap(data=ds,
-                        #            projection=projection,
-                        #            features=['coastline', 'ocean'],
-                        #            frame=True,
-                        #            )
+                        plot_id = (f"{CONFIG['plotting'][ind.name]['label']} "
+                                   f"{ind.attrs['long_name'].lower()} - "
+                                   f"{ds_input.attrs['source']} ({period})")
+
+                        # trim the plot_id
+                        changes = {
+                            'interannual climatological 30-year': 'interannual',
+                            'intra climatological 30-year average of ': 'intra-',
+                            'climatological 30-year average': f'{freq_adj} climate average',
+                            'climatological 30-year linregress': 'linear climate trend',
+                            'total standard deviation': 'climate standard deviation',
+                            '.': '',
+                        }
+                        for k, v in changes.items():
+                            plot_id = plot_id.replace(k, v).strip()
+                        logger.info(f"Variable: {ind.name} --- Plotting {plot_id}")
+                        # print(f'plot_id for {ind.name} --- {plot_id}')
+
+                        # skip trends for now
+                        # if 'linregress' in ind.name: continue
+
+                        # convert units ToDo: this should be done in the clean-up step
+                        from xclim.core import units
+                        try:
+                            ind = units.convert_units_to(ind, CONFIG["plotting"][ind.name]["units"])
+                        except (KeyError, ValueError):
+                            pass
+
+                        # selection of data
+                        sel_kwargs = {"period": period,
+                                      freq: ind[freq].values}
+                        if 'linregress' in ind.name:
+                            sel_kwargs.setdefault('linreg_param', 'slope')
+
+                        # levels and ticks
+                        if 'linspace' in CONFIG["plotting"][ind.name]["ticks"]:
+                            levels = np.linspace(CONFIG["plotting"][ind.name]["limits"][freq]["vmin"],
+                                                 CONFIG["plotting"][ind.name]["limits"][freq]["vmax"],
+                                                 CONFIG["plotting"][ind.name]["levels"])
+                            ticks = levels[0::2]
+                        else:
+                            levels = CONFIG["plotting"][ind.name]["levels"]
+                            ticks = CONFIG["plotting"][ind.name]["ticks"]
+
+                        # plot kwargs
+                        plot_kwargs = {"x": "lon",
+                                       "y": "lat",
+                                       "col": None if 'year' in freq else freq,
+                                       "col_wrap": CONFIG["plotting"]["col_wrap"][freq],
+                                       **CONFIG["plotting"][ind.name]["limits"][freq],
+                                       "cbar_kwargs": {
+                                           "shrink": 0.8,
+                                           "ticks": ticks,
+                                            },
+                                       }
+
+                        # remove col and col_wrap if annual, gridmap doesn't like it ToDo: fix in fg.gridmap
+                        if 'year' in freq:
+                            plot_kwargs.pop('col')
+                            plot_kwargs.pop('col_wrap')
+
+                        # use_attrs
+                        use_attrs = {"suptitle": plot_id, }
+
+                        # gridmap kwargs
+                        gridmap_kwargs = {"projection": projection,
+                                          "transform": ccrs.PlateCarree(),
+                                          "levels": levels,
+                                          "features": ['states'],
+                                          "frame": True,
+                                          "contourf": True,
+                                          }
+                        fg.gridmap(data=ind.sel(sel_kwargs),
+                                   plot_kw=plot_kwargs,
+                                   use_attrs=use_attrs,
+                                   **gridmap_kwargs,
+                                   )
+                        # plt.show(block=False)
+
+                        # prepare file_name
+                        changes = {'standard deviation': 'std', '- ': '', '(': '', ')': '', ' ': '_', }
+                        file_name = plot_id
+                        for k, v in changes.items():
+                            file_name = file_name.replace(k, v)
+                        cur = {
+                            "processing_level": "figures",
+                            "period": period,
+                            "file_name": file_name,
+                        }
+                        out_file = Path(f"{CONFIG['paths']['figures']}".format(**cur))
+                        if not out_file.parent.exists(): out_file.parent.mkdir(parents=True, exist_ok=True)
+
+                        # save to png
+                        logger.info(f"Saving {out_file}.png ...")
+                        plt.savefig(out_file, dpi=200, bbox_inches='tight')
+                        # print(f"Saving {out_file}.png ...")
 
     # --- ENSEMBLES ---
     if "ensembles" in CONFIG["tasks"]:
