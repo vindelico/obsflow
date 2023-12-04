@@ -15,7 +15,7 @@ tasks:
   #- regrid # Regrid the simulation onto the reference grid.
   #- cleanup # Join each individually adjusted variable back in one scenario dataset and clean up other details.
   #- indicators # Compute xclim indicators on the scenario.
-  - climatologies # Compute climatological operations for the indicators (mean, std, trend).
+  #- climatologies # Compute climatological operations for the indicators (mean, std, trend).
   - plotting # Make plots of results from climatological operations.
   #- ensembles # Compute the ensemble statistics on indicators, climatology and deltas.
 
@@ -301,6 +301,7 @@ plotting:
     levels: 21
     ticks: linspace
     units: degC
+    divergent: 0
 #      cmap: RdBu_r
   tn_mean_clim_mean: *mean
   tx_mean_clim_mean: *mean
@@ -318,6 +319,7 @@ plotting:
       [0, 0.5, 1, 2, 3, 4, 5, 7.5, 10, 12.5, 15, 20]
     ticks: *levels_std
     units: K
+    divergent: False
 #      cmap: afmhot_r
   tn_mean_clim_std: *std_inter
   tx_mean_clim_std: *std_inter
@@ -332,6 +334,7 @@ plotting:
     levels: *levels_std
     ticks: *levels_std
     units: K
+    divergent: False
 #      cmap: afmhot_r
   tn_std_clim_mean: *std_intra
   tx_std_clim_mean: *std_intra
@@ -346,6 +349,7 @@ plotting:
     levels: *levels_std
     ticks: *levels_std
     units: K
+    divergent: False
 #      cmap: afmhot_r
   tn_std_clim_total: *std_total
   tx_std_clim_total: *std_total
@@ -362,6 +366,7 @@ plotting:
     levels: 9
     ticks: linspace
     units: K
+    divergent: 0
 #        cmap: RdBu_r
   tn_mean_clim_linregress: *trend
   tx_mean_clim_linregress: *trend

@@ -348,19 +348,20 @@ if __name__ == "__main__":
                                    f"{ind.attrs['long_name'].lower()} - "
                                    f"{ds_input.attrs['source']} ({period})")
 
+                        # print(f"Raw ID: ..................... {ind.name} --- {plot_id}")
                         # trim the plot_id
                         changes = {
-                            'interannual climatological 30-year': 'interannual',
-                            'intra climatological 30-year average of ': 'intra-',
-                            'climatological 30-year average': f'{freq_adj} climate average',
-                            'climatological 30-year linregress': 'linear climate trend',
+                            'interannual 30-year climatological': 'interannual',
+                            'intra 30-year climatological average of ': 'intra-',
+                            '30-year climatological average': f'{freq_adj} climate average',
+                            '30-year climatological linregress': 'linear climate trend',
                             'total standard deviation': 'climate standard deviation',
                             '.': '',
                         }
                         for k, v in changes.items():
                             plot_id = plot_id.replace(k, v).strip()
                         logger.info(f"Variable: {ind.name} --- Plotting {plot_id}")
-                        # print(f'plot_id for {ind.name} --- {plot_id}')
+                        # print(f'Trimmed ID: {ind.name} --- {plot_id}')
 
                         # skip trends for now
                         # if 'linregress' in ind.name: continue
@@ -372,11 +373,16 @@ if __name__ == "__main__":
                         except (KeyError, ValueError):
                             pass
 
-                        # selection of data
+                        # selection and scaling of data ToDo: the scaling should be done in the clean-up step
                         sel_kwargs = {"period": period,
                                       freq: ind[freq].values}
+                        scale_factor = 1
                         if 'linregress' in ind.name:
                             sel_kwargs.setdefault('linreg_param', 'slope')
+                            scale_factor = 10
+
+                        # use_attrs
+                        use_attrs = {}  # {"suptitle": plot_id, }
 
                         # levels and ticks
                         if 'linspace' in CONFIG["plotting"][ind.name]["ticks"]:
@@ -405,22 +411,22 @@ if __name__ == "__main__":
                             plot_kwargs.pop('col')
                             plot_kwargs.pop('col_wrap')
 
-                        # use_attrs
-                        use_attrs = {"suptitle": plot_id, }
-
                         # gridmap kwargs
                         gridmap_kwargs = {"projection": projection,
                                           "transform": ccrs.PlateCarree(),
-                                          "levels": levels,
                                           "features": ['states'],
-                                          "frame": True,
                                           "contourf": True,
+                                          "divergent": CONFIG["plotting"][ind.name]["divergent"],
+                                          "levels": levels,
+                                          "frame": True,
                                           }
-                        fg.gridmap(data=ind.sel(sel_kwargs),
-                                   plot_kw=plot_kwargs,
-                                   use_attrs=use_attrs,
-                                   **gridmap_kwargs,
-                                   )
+
+                        with xr.set_options(keep_attrs=True):
+                            fg.gridmap(data=ind.sel(sel_kwargs) * scale_factor,
+                                       plot_kw=plot_kwargs,
+                                       use_attrs=use_attrs,
+                                       **gridmap_kwargs,
+                                       )
                         # plt.show(block=False)
 
                         # prepare file_name
