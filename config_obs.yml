@@ -11,10 +11,10 @@
 #  (by modifying extract:simulation:search_data_catalogs:other_search_criteria:)
 # to make sure all tasks work properly before launching it for all simulations.
 tasks:
-  #- extract # Extract the simulation and reference dataset with the right domain and period.
+  - extract # Extract the simulation and reference dataset with the right domain and period.
   #- regrid # Regrid the simulation onto the reference grid.
   #- cleanup # Join each individually adjusted variable back in one scenario dataset and clean up other details.
-  #- indicators # Compute xclim indicators on the scenario.
+  - indicators # Compute xclim indicators on the scenario.
   #- climatologies # Compute climatological operations for the indicators (mean, std, trend).
   - plotting # Make plots of results from climatological operations.
   #- ensembles # Compute the ensemble statistics on indicators, climatology and deltas.
@@ -81,7 +81,7 @@ extract:
         tasmax: D
         tasmin: D
         tas: D
-        #pr: D
+        pr: D
         #dtr: D
       periods: #*ref_period
       other_search_criteria:
@@ -274,7 +274,7 @@ plotting:
 #            ['1981', '2010'], ['1991', '2020'], ['1991', '2018']]
   data:
     processing_level: climatology
-  xrfreq:
+  xrfreq_names:
     AS-JAN: year
     QS-DEC: season
     MS: month
@@ -282,7 +282,7 @@ plotting:
     year:
     season: 2
     month: 3
-  gridmap_kwars:
+  gridmap_kwargs:
     contourf: True
   # mean
   tg_mean_clim_mean: &mean
@@ -363,10 +363,12 @@ plotting:
         vmax: 2
       season: *vmin_vmax_trend
       month: *vmin_vmax_trend
+#    levels: 8
+#    ticks: [-2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2]
     levels: 9
     ticks: linspace
     units: K
-    divergent: 0
+    divergent: True
 #        cmap: RdBu_r
   tn_mean_clim_linregress: *trend
   tx_mean_clim_linregress: *trend
