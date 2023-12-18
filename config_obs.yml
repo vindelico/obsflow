@@ -11,12 +11,12 @@
 #  (by modifying extract:simulation:search_data_catalogs:other_search_criteria:)
 # to make sure all tasks work properly before launching it for all simulations.
 tasks:
-  - extract # Extract the simulation and reference dataset with the right domain and period.
+  #- extract # Extract the simulation and reference dataset with the right domain and period.
   #- regrid # Regrid the simulation onto the reference grid.
   #- cleanup # Join each individually adjusted variable back in one scenario dataset and clean up other details.
   - indicators # Compute xclim indicators on the scenario.
-  #- climatologies # Compute climatological operations for the indicators (mean, std, trend).
-  - plotting # Make plots of results from climatological operations.
+  - climatologies # Compute climatological operations for the indicators (mean, std, trend).
+  #- plotting # Make plots of results from climatological operations.
   #- ensembles # Compute the ensemble statistics on indicators, climatology and deltas.
 
 # Task Arguments
@@ -68,7 +68,7 @@ extract:
         X: 30
         Y: 30
   # station observations AHCCD
-  station-obs:
+  station-tmp:
     dask:
       n_workers: 1
       threads_per_worker: 2
@@ -81,9 +81,10 @@ extract:
         tasmax: D
         tasmin: D
         tas: D
-        pr: D
         #dtr: D
-      periods: #*ref_period
+      periods:
+      - '1950' # defaults to None == extract all available data!
+      - '2021'
       other_search_criteria:
         source: AHCCD
     extract_dataset:
@@ -107,6 +108,46 @@ extract:
       rechunk:
         time: -1
         station: 50
+
+  station-pr:
+    dask:
+      n_workers: 1
+      threads_per_worker: 2
+      memory_limit:
+        12GB
+    search_data_catalogs:
+      allow_resampling: False
+      allow_conversion: True
+      variables_and_freqs:
+        pr: D
+      periods:
+        - '1950'
+        - '2017'
+      other_search_criteria:
+        source: AHCCD
+    extract_dataset:
+      region:
+        name: Quebec
+        method: shape
+        tile_buffer: 0
+        buffer: 0.03 # needed to capture all QC stations
+        shape: /scen3/braun/data/obs_synthese23/gis/lpr_000b16a_e_QC_simpl1.zip!lpr_000b16a_e_QC_simpl1.shp
+        # shape: /scen3/braun/data/obs_synthese23/gis/region_admin_poly.zip!region_admin_poly.shp # includes over water
+    validation_period:
+      miss: "WMO"
+      window: 35
+      min_years: 25
+      freq: "YS"
+    xarray_open_kwargs:
+      chunks:
+        station: 1
+    save:
+      mode: o
+      rechunk:
+        time: -1
+        station: 50
+
+
 #  # simulations
 #  simulation:
 #    dask:
@@ -284,6 +325,7 @@ plotting:
     month: 3
   gridmap_kwargs:
     contourf: True
+# ------------------------------------- Temperature Plots -------------------------------------
   # mean
   tg_mean_clim_mean: &mean
     agg_operation: mean
@@ -302,7 +344,6 @@ plotting:
     ticks: linspace
     units: degC
     divergent: 0
-#      cmap: RdBu_r
   tn_mean_clim_mean: *mean
   tx_mean_clim_mean: *mean
   # interannual
@@ -320,12 +361,11 @@ plotting:
     ticks: *levels_std
     units: K
     divergent: False
-#      cmap: afmhot_r
   tn_mean_clim_std: *std_inter
   tx_mean_clim_std: *std_inter
   # intra
   tg_std_clim_mean: &std_intra
-    agg_operation: std
+    agg_operation: mean
     label: intra
     limits:
       year: *vmin_vmax_std
@@ -335,7 +375,6 @@ plotting:
     ticks: *levels_std
     units: K
     divergent: False
-#      cmap: afmhot_r
   tn_std_clim_mean: *std_intra
   tx_std_clim_mean: *std_intra
   # total
@@ -350,7 +389,6 @@ plotting:
     ticks: *levels_std
     units: K
     divergent: False
-#      cmap: afmhot_r
   tn_std_clim_total: *std_total
   tx_std_clim_total: *std_total
   # trend
@@ -358,20 +396,88 @@ plotting:
     agg_operation: linregress
     label: ''
     limits:
-      year: &vmin_vmax_trend
+      year: &vmin_vmax_trend_tmp
         vmin: -2
         vmax: 2
-      season: *vmin_vmax_trend
-      month: *vmin_vmax_trend
+      season: *vmin_vmax_trend_tmp
+      month: *vmin_vmax_trend_tmp
 #    levels: 8
 #    ticks: [-2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2]
     levels: 9
     ticks: linspace
     units: K
     divergent: True
-#        cmap: RdBu_r
   tn_mean_clim_linregress: *trend
   tx_mean_clim_linregress: *trend
+# ------------------------------------- Precipitation Plots -------------------------------------
+  # mean
+  pr_mean_clim_mean:
+    agg_operation: mean
+    label: ''
+    limits:
+      year:
+        vmin: 0
+        vmax: 5
+      season:
+        vmin: 0
+        vmax: 300
+      month:
+        vmin: 0
+        vmax: 150
+    levels: 21
+    ticks: linspace
+    units: mm d-1
+    divergent: False
+  # interannual
+  pr_mean_clim_std:
+    agg_operation: std
+    label: interannual
+    limits:
+      year: *vmin_vmax_std
+      season: *vmin_vmax_std
+      month: *vmin_vmax_std
+    levels: *levels_std
+    ticks: *levels_std
+    units: mm d-1
+    divergent: False
+  # intra
+  pr_std_clim_mean:
+    agg_operation: mean
+    label: intra
+    limits:
+      year: *vmin_vmax_std
+      season: *vmin_vmax_std
+      month: *vmin_vmax_std
+    levels: *levels_std
+    ticks: *levels_std
+    units: mm d-1
+    divergent: False
+  # total
+  pr_std_clim_total:
+    agg_operation: std
+    label: total
+    limits:
+      year: *vmin_vmax_std
+      season: *vmin_vmax_std
+      month: *vmin_vmax_std
+    levels: *levels_std
+    ticks: *levels_std
+    units: mm d-1
+    divergent: False
+  # trend
+  pr_mean_clim_linregress:
+    agg_operation: linregress
+    label: ''
+    limits:
+      year: &vmin_vmax_trend_pr
+        vmin: -30
+        vmax: 30
+      season: *vmin_vmax_trend_pr
+      month: *vmin_vmax_trend_pr
+    levels: 9
+    ticks: linspace
+    units: mm d-1
+    divergent: True
 
 #ensembles:
 #  dask:

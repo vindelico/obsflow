@@ -88,7 +88,7 @@ indicators:
       var_name: tn_mean
     parameters:
       freq: MS
-# ---------------------------- Standard Deviation Intra --------------------------------#
+# ---------------------------- Standard Deviation Temp Intra --------------------------------#
   tg_std_annual:
     base: stats
 #    compute: select_resample_op
@@ -217,6 +217,75 @@ indicators:
       var_name: tn_std
 
 # ---------------------------- Precipitation --------------------------------#
+  pr_mean_annual:
+    base: prcpavg
+    src_freq: null
+    missing: skip
+    cf_attrs:
+      long_name: annual mean of daily precipitation
+      var_name: pr_mean
+    parameters:
+      freq: YS
+  pr_mean_seasonal:
+    base: prcpavg
+    src_freq: null
+    missing: skip
+    cf_attrs:
+      long_name: seasonal mean of daily precipitation
+      var_name: pr_mean
+    parameters:
+      freq: QS-DEC
+  pr_mean_monthly:
+    base: prcpavg
+    src_freq: null
+    missing: skip
+    cf_attrs:
+      long_name: monthly mean of daily precipitation
+      var_name: pr_mean
+    parameters:
+      freq: MS
+# ---------------------------- Standard Deviation Precip Intra --------------------------------#
+  pr_std_annual:
+    base: stats
+    src_freq: null
+    missing: skip
+    input:
+      da: pr
+    parameters:
+      op: std
+      freq: YS
+    cf_attrs:
+      long_name: annual standard deviation of daily precipitation
+      var_name: pr_std
+  pr_std_seasonal:
+    base: stats
+    src_freq: null
+    missing: skip
+    input:
+      da: pr
+    parameters:
+      op: std
+      freq: QS-DEC
+    cf_attrs:
+      long_name: seasonal standard deviation of daily precipitation
+      var_name: pr_std
+  pr_std_monthly:
+    base: stats
+    src_freq: null
+    missing: skip
+    input:
+      da: pr
+    parameters:
+      op: std
+      freq: MS
+    cf_attrs:
+      long_name: monthly standard deviation of daily precipitation
+      var_name: pr_std
+
+
+
+
+
 #  prcptot_annual:
 #    base: prcptot
 #    cf_attrs:

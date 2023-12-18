@@ -70,6 +70,7 @@ if __name__ == "__main__":
                     "id": ds_id,
                     "xrfreq": "D",
                     "processing_level": "extracted",
+                    # "type": source_type,
                 }
                 # check if steps was already done
                 if not pcat.exists_in_cat(**cur):
@@ -119,6 +120,7 @@ if __name__ == "__main__":
                 "id": ds_input.attrs["cat:id"],
                 "xrfreq": ds_input.attrs["cat:xrfreq"],
                 "processing_level": "regridded",
+                # "type": source_type,
             }
             if not pcat.exists_in_cat(**cur):
                 with (
@@ -150,6 +152,7 @@ if __name__ == "__main__":
                 "id": cu_id,
                 "xrfreq": "D",
                 "processing_level": "cleaned",
+                # "type": source_type,
             }
             if not pcat.exists_in_cat(**cur):
                 with (
@@ -196,6 +199,7 @@ if __name__ == "__main__":
                         "id": ds_input.attrs["cat:id"],
                         "xrfreq": key_freq,
                         "processing_level": "indicators",
+                        # "type": source_type,
                     }
                     if not pcat.exists_in_cat(**cur):
                         # save to zarr
@@ -216,6 +220,7 @@ if __name__ == "__main__":
                 "id": ds_input.attrs["cat:id"],
                 "xrfreq": ds_input.attrs["cat:xrfreq"],
                 "processing_level": "climatology",
+                # "type": source_type,
             }
 
             if not pcat.exists_in_cat(**cur):
@@ -223,7 +228,7 @@ if __name__ == "__main__":
                       xs.measure_time(name=f"climatologies {key_input}", logger=logger)
                       ):
                     # compute climatological mean
-                    all_periods = []
+                    all_horizons = []
                     for period in CONFIG["aggregate"]["periods"]:
                         # compute properties for period when contained in data
                         if ds_input.time.dt.year.min() <= int(period[0]) and \
@@ -238,9 +243,9 @@ if __name__ == "__main__":
                                 **CONFIG["aggregate"]["climatological_mean"],
                                 periods=period,
                                 rename_variables=True,
-                                periods_as_dim=True,
+                                horizons_as_dim=True,
                             )
-                            all_periods.append(ds_mean)
+                            all_horizons.append(ds_mean)
 
                             # Calculate interannual standard deviation, skipping intra-[freq] std --------------------
                             logger.info(f"Computing interannual standard deviation for {key_input} for period {period}")
@@ -252,9 +257,9 @@ if __name__ == "__main__":
                                 **CONFIG["aggregate"]["climatological_std"],
                                 periods=period,
                                 rename_variables=True,
-                                periods_as_dim=True,
+                                horizons_as_dim=True,
                             )
-                            all_periods.append(ds_std)
+                            all_horizons.append(ds_std)
 
                             # Calculate climatological standard deviation --------------------
                             logger.info(
@@ -293,7 +298,7 @@ if __name__ == "__main__":
                                         f"total standard deviation of {' '.join(ds_std[ds_std_varname].attrs['description'].split(' ')[-3:])}"
                                     ds_std_clim[new_varname].attrs['long_name'] = ds_std_clim[new_varname].attrs[
                                         'description']
-                            all_periods.append(ds_std_clim)
+                            all_horizons.append(ds_std_clim)
 
                             # Calculate trends -----------------------------------------------
                             logger.info(f"Computing climatological linregress for {key_input} for period {period}")
@@ -305,13 +310,13 @@ if __name__ == "__main__":
                                 periods=period,
                                 min_periods=0.7,
                                 rename_variables=True,
-                                periods_as_dim=True,
+                                horizons_as_dim=True,
                             )
-                            all_periods.append(ds_trend)
+                            all_horizons.append(ds_trend)
 
                     logger.info(f"Merging climatology of periods for {key_input}")
-                    # all_periods = client.scatter(all_periods)
-                    ds_clim = xr.merge(all_periods, combine_attrs='override')
+                    # all_horizons = client.scatter(all_horizons)
+                    ds_clim = xr.merge(all_horizons, combine_attrs='override')
 
                     # save to zarr
                     path = f"{CONFIG['paths']['task']}".format(**cur)
@@ -354,11 +359,14 @@ if __name__ == "__main__":
                         # if not all(i in da_grid.name for i in ['tg_mean_clim_mean', 'tg']): continue  # Todo: remove this
 
                         # get the corresponding AHCCD observation data -----------------------------------------
-                        da_station = pcat.search(
-                            source='AHCCD',
-                            processing_level='climatology',
-                            xrfreq=ds_input.attrs.get('cat:xrfreq')
-                        ).to_dataset()[da_grid.name]
+                        if any(n in da_grid.name for n in ['tg', 'tx', 'tn']):
+                            da_station = pcat.search(
+                                source='AHCCD',
+                                processing_level='climatology',
+                                xrfreq=ds_input.attrs.get('cat:xrfreq')
+                            ).to_dataset()[da_grid.name]
+                        else:  # FixMe: remove this when AHCCD data are available for precipitation
+                            da_station = None
 
                         # get a plot_id for labeling and file naming -------------------------------------------
                         plot_id = (f"{CONFIG['plotting'][da_grid.name]['label']} "
@@ -456,35 +464,39 @@ if __name__ == "__main__":
                             )
 
                             # add station data -
-                            plot_kwargs_station = {
-                                                      k: plot_kwargs_grid[k]
-                                                      for k in ['x', 'y', 'vmin', 'vmax']
-                                                  } | {
-                                                      'edgecolor': 'dimgray',
-                                                      'linewidth': 0.01,
-                                                      'add_colorbar': False,
-                                                      'label': 'AHCCD-Stations'
-                                                  }
-                            scattermap_kwargs = {k: gridmap_kwargs[k] for k in
-                                                 ['transform', 'divergent', 'levels', 'frame']}
+                            if da_station:
+                                plot_kwargs_station = {
+                                                          k: plot_kwargs_grid[k]
+                                                          for k in ['x', 'y', 'vmin', 'vmax']
+                                                      } | {
+                                                          'edgecolor': 'dimgray',
+                                                          'linewidth': 0.01,
+                                                          'add_colorbar': False,
+                                                          'label': 'AHCCD-Stations'
+                                                      }
+                                scattermap_kwargs = {k: gridmap_kwargs[k] for k in
+                                                     ['transform', 'divergent', 'levels', 'frame']}
 
-                            for ax, sel_kwarg in zip(
-                                    fax.axs.flat if isinstance(fax, xarray.plot.FacetGrid) else [fax],
-                                    [{}] if freq in 'year' else [{freq: f} for f in da_station[freq].values]):
-                                title = ax.get_title()
-                                data = da_station.sel(sel_kwargs | sel_kwarg) * scale_factor
-                                data = data.sel({data.dims[0]: ~np.isnan(data.squeeze().values)})  # take out nans # ToDo: The squeeze can be removed when data were regenergated without the year dimension
-                                scax = fg.scattermap(
-                                    # data=xr.Dataset({da_station.name: da_station.sel(sel_kwargs) * scale_factor}),
-                                    data=data,
-                                    ax=ax,
-                                    plot_kw=plot_kwargs_station,
-                                    **scattermap_kwargs,
-                                    # cmap=[c.cmap for c in ax.get_children() if hasattr(c, 'cmap')][0],
-                                )
-                                scax.set_title('')
-                                scax.text(x=0.83, y=0.93, s=title, fontsize=14, fontweight='bold', transform=ax.transAxes)
-                                scax.set_extent([-79.5, -60, 45, 61], crs=ccrs.PlateCarree())
+                                for ax, sel_kwarg in zip(
+                                        fax.axs.flat if isinstance(fax, xarray.plot.FacetGrid) else [fax],
+                                        [{}] if freq in 'year' else [{freq: f} for f in da_station[freq].values]):
+                                    title = ax.get_title()
+                                    data = da_station.sel(sel_kwargs | sel_kwarg) * scale_factor
+                                    data = data.sel({data.dims[0]: ~np.isnan(data.squeeze().values)})  # take out nans # ToDo: The squeeze can be removed when data were regenergated without the year dimension
+                                    scax = fg.scattermap(
+                                        # data=xr.Dataset({da_station.name: da_station.sel(sel_kwargs) * scale_factor}),
+                                        data=data,
+                                        ax=ax,
+                                        plot_kw=plot_kwargs_station,
+                                        **scattermap_kwargs,
+                                        # cmap=[c.cmap for c in ax.get_children() if hasattr(c, 'cmap')][0],
+                                    )
+                                    scax.set_title('')
+                                    scax.text(x=0.83, y=0.93, s=title, fontsize=14, fontweight='bold', transform=ax.transAxes)
+                                    scax.set_extent([-79.5, -60, 45, 61], crs=ccrs.PlateCarree())
+                            else:
+                                scax = fax.axs.flat[-1] if isinstance(fax, xarray.plot.FacetGrid) else fax
+
                             scax.legend(loc='lower left',
                                         fontsize=16,
                                         bbox_to_anchor=(1.08, 1.0),
@@ -504,9 +516,11 @@ if __name__ == "__main__":
                                                     bottom=0.01,
                                                     wspace=0.0,
                                                     hspace=0.0)
-                            fig.suptitle('\n'.join(wrap(plot_id[:1].upper() + plot_id[1:], 50)),
-                                             fontsize=26, fontweight='bold', y=0.96)
-                            #fig.tight_layout()
+                            title = '\n'.join(wrap(plot_id[:1].upper() + plot_id[1:], 50))
+                            if 'year' not in freq:
+                                fig.suptitle(title, fontsize=26, fontweight='bold', y=0.96)
+                            else:
+                                scax.set_title(title, fontsize=16, fontweight='bold')
                         # plt.show(block=False)
 
                         # prepare file_name, directory and save -------------------------------------------------
