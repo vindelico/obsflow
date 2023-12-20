@@ -14,14 +14,14 @@ tasks:
   #- extract # Extract the simulation and reference dataset with the right domain and period.
   #- regrid # Regrid the simulation onto the reference grid.
   #- cleanup # Join each individually adjusted variable back in one scenario dataset and clean up other details.
-  - indicators # Compute xclim indicators on the scenario.
-  - climatologies # Compute climatological operations for the indicators (mean, std, trend).
-  #- plotting # Make plots of results from climatological operations.
+  #- indicators # Compute xclim indicators on the scenario.
+  #- climatologies # Compute climatological operations for the indicators (mean, std, trend).
+  - plotting # Make plots of results from climatological operations.
   #- ensembles # Compute the ensemble statistics on indicators, climatology and deltas.
 
 # Task Arguments
 
-extract:
+extract:  # ------------------------------------- Extraction --------------------------------------------
   # reanalysis
   reconstruction:
     dask:
@@ -67,8 +67,8 @@ extract:
         time: -1
         X: 30
         Y: 30
-  # station observations AHCCD
-  station-tmp:
+  # station observations AHCCD ----------------------------------------------------------------------------------
+  station-tmp:  # ------------------------------------- Station Temperature -------------------------------------
     dask:
       n_workers: 1
       threads_per_worker: 2
@@ -109,7 +109,7 @@ extract:
         time: -1
         station: 50
 
-  station-pr:
+  station-pr:  # ------------------------------------- Station Precipitation -------------------------------------
     dask:
       n_workers: 1
       threads_per_worker: 2
@@ -193,7 +193,7 @@ extract:
 
 # regrid
 
-#regrid:
+#regrid: ------------------------------------- Regridding -------------------------------------
 #  dask:
 #    n_workers: 2
 #    threads_per_worker: 5
@@ -215,7 +215,7 @@ extract:
 #    rechunk:
 #      time: -1
 
-#cleanup:
+#cleanup: ------------------------------------- Cleanup -------------------------------------
 #  dask:
 #    n_workers: 4
 #    threads_per_worker: 3
@@ -260,7 +260,7 @@ extract:
 #
 #
 
-indicators:
+indicators:  # ------------------------------------- Indicators --------------------------------------------------
   dask:
     n_workers: 8
     threads_per_worker: 5
@@ -274,11 +274,11 @@ indicators:
     rechunk:
       time: -1
 
-aggregate:
+aggregate:  # ------------------------------------- Climatological Operations -------------------------------------
   dask:
     n_workers: 10
     threads_per_worker: 4
-    memory_limit: "12GB"
+    memory_limit: "15GB"
   periods: [['1951', '1980'], ['1961', '1990'], ['1971', '2000'],
             ['1981', '2010'], ['1991', '2020'], ['1991', '2018']] # ['1980', '1985']]
   input:
@@ -287,26 +287,17 @@ aggregate:
          - indicators
   climatological_mean: # automatically passed to the function
     op: mean
-#    stride: 5
-#    window: 30
-#    min_periods: 28
     to_level: climatology
   climatological_std: # automatically passed to the function
     op: std
-#    stride: 5
-#    window: 30
-#    min_periods: 28
     to_level: climatology
   climatological_trend: # automatically passed to the function
     op: linregress
-#    stride: 5
-#    window: 30
-#    min_periods: 28
     to_level: climatology
   save:
     mode: 'o'
 
-plotting:
+plotting:  # ------------------------------------- Plotting -------------------------------------
   dask:
     n_workers: 5
     threads_per_worker: 4
@@ -351,11 +342,11 @@ plotting:
     agg_operation: std
     label: interannual
     limits:
-      year: &vmin_vmax_std
+      year: &vmin_vmax_std_tmp
         vmin: 0
-        vmax: 5
-      season: *vmin_vmax_std
-      month: *vmin_vmax_std
+        vmax: 20
+      season: *vmin_vmax_std_tmp
+      month: *vmin_vmax_std_tmp
     levels: &levels_std
       [0, 0.5, 1, 2, 3, 4, 5, 7.5, 10, 12.5, 15, 20]
     ticks: *levels_std
@@ -368,9 +359,9 @@ plotting:
     agg_operation: mean
     label: intra
     limits:
-      year: *vmin_vmax_std
-      season: *vmin_vmax_std
-      month: *vmin_vmax_std
+      year: *vmin_vmax_std_tmp
+      season: *vmin_vmax_std_tmp
+      month: *vmin_vmax_std_tmp
     levels: *levels_std
     ticks: *levels_std
     units: K
@@ -382,9 +373,9 @@ plotting:
     agg_operation: std
     label: total
     limits:
-      year: *vmin_vmax_std
-      season: *vmin_vmax_std
-      month: *vmin_vmax_std
+      year: *vmin_vmax_std_tmp
+      season: *vmin_vmax_std_tmp
+      month: *vmin_vmax_std_tmp
     levels: *levels_std
     ticks: *levels_std
     units: K
@@ -415,15 +406,11 @@ plotting:
     agg_operation: mean
     label: ''
     limits:
-      year:
+      year: &vmin_vmax_mean_pr
         vmin: 0
         vmax: 5
-      season:
-        vmin: 0
-        vmax: 300
-      month:
-        vmin: 0
-        vmax: 150
+      season: *vmin_vmax_mean_pr
+      month: *vmin_vmax_mean_pr
     levels: 21
     ticks: linspace
     units: mm d-1
@@ -433,11 +420,15 @@ plotting:
     agg_operation: std
     label: interannual
     limits:
-      year: *vmin_vmax_std
-      season: *vmin_vmax_std
-      month: *vmin_vmax_std
-    levels: *levels_std
-    ticks: *levels_std
+      year: &vmin_vmax_std_pr
+        vmin: 0
+        vmax: 1
+      season: *vmin_vmax_std_pr
+      month: *vmin_vmax_std_pr
+    levels: &levels_std_pr
+      10
+    ticks: &ticks_std_pr
+      linspace
     units: mm d-1
     divergent: False
   # intra
@@ -445,11 +436,11 @@ plotting:
     agg_operation: mean
     label: intra
     limits:
-      year: *vmin_vmax_std
-      season: *vmin_vmax_std
-      month: *vmin_vmax_std
-    levels: *levels_std
-    ticks: *levels_std
+      year: *vmin_vmax_std_pr
+      season: *vmin_vmax_std_pr
+      month: *vmin_vmax_std_pr
+    levels: *levels_std_pr
+    ticks: *ticks_std_pr
     units: mm d-1
     divergent: False
   # total
@@ -457,11 +448,11 @@ plotting:
     agg_operation: std
     label: total
     limits:
-      year: *vmin_vmax_std
-      season: *vmin_vmax_std
-      month: *vmin_vmax_std
-    levels: *levels_std
-    ticks: *levels_std
+      year: *vmin_vmax_std_pr
+      season: *vmin_vmax_std_pr
+      month: *vmin_vmax_std_pr
+    levels: *levels_std_pr
+    ticks: *ticks_std_pr
     units: mm d-1
     divergent: False
   # trend
@@ -470,8 +461,8 @@ plotting:
     label: ''
     limits:
       year: &vmin_vmax_trend_pr
-        vmin: -30
-        vmax: 30
+        vmin: -2
+        vmax: 2
       season: *vmin_vmax_trend_pr
       month: *vmin_vmax_trend_pr
     levels: 9

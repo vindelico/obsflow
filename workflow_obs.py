@@ -229,7 +229,7 @@ if __name__ == "__main__":
                       ):
                     # compute climatological mean
                     all_horizons = []
-                    for period in CONFIG["aggregate"]["periods"]:
+                    for horizon in CONFIG["aggregate"]["periods"]:
                         # compute properties for period when contained in data
                         if ds_input.time.dt.year.min() <= int(period[0]) and \
                                 ds_input.time.dt.year.max() >= int(period[1]):
@@ -316,12 +316,12 @@ if __name__ == "__main__":
 
                     logger.info(f"Merging climatology of periods for {key_input}")
                     # all_horizons = client.scatter(all_horizons)
-                    ds_clim = xr.merge(all_horizons, combine_attrs='override')
+                    ds_clim = xr.merge([ds.drop_vars('time') for ds in all_horizons], combine_attrs='override')
 
                     # save to zarr
                     path = f"{CONFIG['paths']['task']}".format(**cur)
                     xs.save_to_zarr(ds_clim, path, **CONFIG["aggregate"]["save"])
-                    pcat.update_from_ds(ds=ds_clim.drop_vars(['time']), path=path)
+                    pcat.update_from_ds(ds=ds_clim, path=path)
 
     # --- PLOTTING ---
     if "plotting" in CONFIG["tasks"]:
@@ -353,7 +353,7 @@ if __name__ == "__main__":
                 projection = ccrs.LambertConformal()
                 freq = CONFIG['plotting']['xrfreq_names'][ds_input.attrs['cat:xrfreq']]
 
-                for period in ds_input.period.values:  # ['1951-1980']:  #   #  # FixMe: remove this
+                for horizon in ds_input.horizon.values:  # ['1951-1980']:  #   #  # FixMe: remove this
                     for da_grid in ds_input.data_vars.values():
 
                         # if not all(i in da_grid.name for i in ['tg_mean_clim_mean', 'tg']): continue  # Todo: remove this
@@ -371,7 +371,7 @@ if __name__ == "__main__":
                         # get a plot_id for labeling and file naming -------------------------------------------
                         plot_id = (f"{CONFIG['plotting'][da_grid.name]['label']} "
                                    f"{da_grid.attrs['long_name'].lower()} - "
-                                   f"{ds_input.attrs['source']} ({period})")
+                                   f"{ds_input.attrs['source']} ({horizon})")
                         # print(f"Raw ID: ..................... {da_grid.name} --- {plot_id}")
 
                         # trim the plot_id ---------------------------------------------------------------------
@@ -392,15 +392,16 @@ if __name__ == "__main__":
                         # convert units ToDo: this should be done in the clean-up step -------------------------
                         from xclim.core import units
                         try:
-                            da_grid = units.convert_units_to(da_grid, CONFIG["plotting"][da_grid.name]["units"])
-                            if '_mean_clim_mean' in da_station.name:  # Fixme this is so dirty! Because not all in ˚C
-                                da_station = units.convert_units_to(da_station, CONFIG["plotting"][da_station.name]["units"])
+                            if 'pr' not in da_grid.name:
+                                da_grid = units.convert_units_to(da_grid, CONFIG["plotting"][da_grid.name]["units"])
+                                if any(f"{n}_mean_clim_mean" in da_station.name for n in ['tg', 'tx', 'tn']): # Fixme this is so dirty! Because not all in ˚C
+                                    da_station = units.convert_units_to(da_station, CONFIG["plotting"][da_station.name]["units"])
                         except (KeyError, ValueError):
                             pass
 
                         # selection and scaling of data ToDo: the scaling should be done in the clean-up step --
-                        sel_kwargs = {"period": period,
-                                      freq: da_grid[freq].values}
+                        sel_kwargs = {"horizon": horizon}  # | {freq: da_grid[freq].values} if freq not in 'year' else {}
+
                         scale_factor = 1
                         if 'linregress' in da_grid.name:
                             sel_kwargs.setdefault('linreg_param', 'slope')
@@ -464,7 +465,7 @@ if __name__ == "__main__":
                             )
 
                             # add station data -
-                            if da_station:
+                            if da_station is not None:
                                 plot_kwargs_station = {
                                                           k: plot_kwargs_grid[k]
                                                           for k in ['x', 'y', 'vmin', 'vmax']
@@ -530,7 +531,7 @@ if __name__ == "__main__":
                             file_name = file_name.replace(k, v)
                         cur = {
                             "processing_level": "test_figures",
-                            "period": period,
+                            "horizon": horizon,
                             "file_name": file_name,
                         }
                         out_file = Path(f"{CONFIG['paths']['figures']}".format(**cur))
