@@ -22,7 +22,7 @@ tasks:
 # Task Arguments
 
 extract:  # ------------------------------------- Extraction --------------------------------------------
-  # reanalysis
+# reanalysis
   reconstruction:
     dask:
       n_workers: 2
@@ -48,27 +48,26 @@ extract:  # ------------------------------------- Extraction -------------------
       region: &region
         name: Quebec
         method: shape
-        tile_buffer: 1.5 #1.5
-        shape: /scen3/braun/data/obs_synthese23/gis/lpr_000b16a_e_QC_simpl1.zip!lpr_000b16a_e_QC_simpl1.shp # shape:shape to create a dictionary (deprecated)
+        tile_buffer: 1.0 #1.5
+        shape: /exec/braun/data/obsflow/gis/region_admin.zip!region_admin.shp # shape:shape to create a dictionary (deprecated)
+        # shape: /scen3/braun/data/obs_synthese23/gis/lpr_000b16a_e_QC_simpl1.zip!lpr_000b16a_e_QC_simpl1.shp # shape:shape to create a dictionary (deprecated)
     stack_drop_nans: &stack
       False
     save:
       mode: o
       encoding:
-        tasmax: &f32
+        tas: &f32
           dtype: float32
-        tasmin:
-          dtype: float32
-        pr:
-          dtype: float32
-        tas:
-          dtype: float32
+        tasmax: *f32
+        tasmin: *f32
+        pr: *f32
       rechunk:
         time: -1
         X: 30
         Y: 30
-  # station observations AHCCD ----------------------------------------------------------------------------------
-  station-tmp:  # ------------------------------------- Station Temperature -------------------------------------
+
+# station observations AHCCD
+  station-tas:  # ------------------------------------- Station Temperature -------------------------------------
     dask:
       n_workers: 1
       threads_per_worker: 2
@@ -93,8 +92,8 @@ extract:  # ------------------------------------- Extraction -------------------
         method: shape
         tile_buffer: 0
         buffer: 0.03 # needed to capture all QC stations
-        shape: /scen3/braun/data/obs_synthese23/gis/lpr_000b16a_e_QC_simpl1.zip!lpr_000b16a_e_QC_simpl1.shp
-        # shape: /scen3/braun/data/obs_synthese23/gis/region_admin_poly.zip!region_admin_poly.shp # includes over water
+        shape: /exec/braun/data/obsflow/gis/region_admin.zip!region_admin.shp
+        # shape: /scen3/braun/data/obs_synthese23/gis/lpr_000b16a_e_QC_simpl1.zip!lpr_000b16a_e_QC_simpl1.shp
     validation_period:
       miss: "WMO"
       window: 35
@@ -131,8 +130,8 @@ extract:  # ------------------------------------- Extraction -------------------
         method: shape
         tile_buffer: 0
         buffer: 0.03 # needed to capture all QC stations
-        shape: /scen3/braun/data/obs_synthese23/gis/lpr_000b16a_e_QC_simpl1.zip!lpr_000b16a_e_QC_simpl1.shp
-        # shape: /scen3/braun/data/obs_synthese23/gis/region_admin_poly.zip!region_admin_poly.shp # includes over water
+        shape: /exec/braun/data/obsflow/gis/region_admin.zip!region_admin.shp
+        # shape: /scen3/braun/data/obs_synthese23/gis/lpr_000b16a_e_QC_simpl1.zip!lpr_000b16a_e_QC_simpl1.shp
     validation_period:
       miss: "WMO"
       window: 35
@@ -147,8 +146,8 @@ extract:  # ------------------------------------- Extraction -------------------
         time: -1
         station: 50
 
+# simulation MRCC5 -> bcs
 
-#  # simulations
 #  simulation:
 #    dask:
 #      n_workers: 2
@@ -190,75 +189,77 @@ extract:  # ------------------------------------- Extraction -------------------
 #        X: 40
 #        Y: 40
 
+# regrid ---------------------------------------- Regridding -------------------------------------------
+regrid:
+  dask:
+    n_workers: 2
+    threads_per_worker: 5
+    memory_limit: 10GB
+  inputs:
+    type: reconstruction
+    processing_level: extracted
+    source: RDRS
+  output:
+    type: reconstruction
+    processing_level: extracted
+    source: ERA5-Land
+  regrid_dataset: # this will be automatically passed to the function.
+    regridder_kwargs:
+      method: nearest_s2d
+      extrap_method: inverse_dist
+      locstream_out: *stack
+      reuse_weights: False
+  save: &save_time_-1
+    mode: o
+    rechunk:
+      X: 30
+      Y: 30
+      time: -1
 
-# regrid
-
-#regrid: ------------------------------------- Regridding -------------------------------------
-#  dask:
-#    n_workers: 2
-#    threads_per_worker: 5
-#    memory_limit: 10GB
-#  inputs:
-#    type: simulation
-#    processing_level: extracted
-#  output:
-#    type: reconstruction
-#    processing_level: extracted
-#  regrid_dataset: # this will be automatically passed to the function.
-#    regridder_kwargs:
-#      method: bilinear
-#      extrap_method: inverse_dist
-#      locstream_out: *stack
-#      reuse_weights: False
-#  save: &save_time_-1
-#    mode: o
-#    rechunk:
-#      time: -1
-
-#cleanup: ------------------------------------- Cleanup -------------------------------------
-#  dask:
-#    n_workers: 4
-#    threads_per_worker: 3
-#    memory_limit: "6GB"
-#  search_data_catalogs:
+# cleanup: ---------------------------------------- Cleanup -------------------------------------------
+cleanup:
+  dask:
+    n_workers: 4
+    threads_per_worker: 3
+    memory_limit: "6GB"
+  inputs:
 #    variables_and_freqs:
+#      tas: D
 #      tasmax: D
 #      tasmin: D
 #      pr: D
 #    allow_conversion: True
 #    allow_resampling: False
-#    other_search_criteria:
-#      processing_level: extracted
-#  xscen_clean_up:
-#    to_level: cleaned
-#    maybe_unstack_dict:
-#      stack_drop_nans: *stack
-#      rechunk:
-#        lat: 15
-#        lon: 15
-#        time: -1
-#    variables_and_units: &units
-#      tasmax: degC
-#      tasmin: degC
-#      pr: mm d-1
+    processing_level: extracted
+  xscen_clean_up:
+    to_level: extracted-cleaned
+    maybe_unstack_dict:
+      stack_drop_nans: *stack
+      rechunk:
+        lat: 30
+        lon: 30
+        time: -1
+    variables_and_units: &units
+      tas: degC
+      tasmax: degC
+      tasmin: degC
+      pr: mm d-1
 #    convert_calendar_kwargs:
 #      target: standard
 #      align_on: random
-#    missing_by_var:
+#   missing_by_var:
 #      tasmax: interpolate
 #      tasmin: interpolate
 #      pr: [ 0 ]
-#  save:
-#    mode: o
-#    encoding:
-#      tasmax:
-#        dtype: float32
-#      tasmin:
-#        dtype: float32
-#      pr:
-#        dtype: float32
-#
-#
+  save:
+    mode: o
+    encoding:
+      tas: *f32
+      tasmax: *f32
+      tasmin: *f32
+      pr: *f32
+
+
 
 indicators:  # ------------------------------------- Indicators --------------------------------------------------
   dask:
@@ -266,7 +267,7 @@ indicators:  # ------------------------------------- Indicators ----------------
     threads_per_worker: 5
     memory_limit: "8GB"
   inputs:
-    processing_level: extracted
+    processing_level: extracted-cleaned
   compute_indicators:
     to_level: indicators
   save: #*save_time_-1
@@ -279,8 +280,8 @@ aggregate:  # ------------------------------------- Climatological Operations --
     n_workers: 10
     threads_per_worker: 4
     memory_limit: "15GB"
-  periods: [['1951', '1980'], ['1961', '1990'], ['1971', '2000'],
-            ['1981', '2010'], ['1991', '2020'], ['1991', '2018']] # ['1980', '1985']]
+  periods: [['1951', '1980'], ['1961', '1990'], ['1971', '2000'], ['1981', '2010'],
+            ['1991', '2020'], ['1988', '2017'], ['1991', '2018']] # ['1980', '1985']]
   input:
     obs:
       processing_level:
@@ -422,11 +423,11 @@ plotting:  # ------------------------------------- Plotting --------------------
     limits:
       year: &vmin_vmax_std_pr
         vmin: 0
-        vmax: 1
+        vmax: 10
       season: *vmin_vmax_std_pr
       month: *vmin_vmax_std_pr
     levels: &levels_std_pr
-      10
+      11
     ticks: &ticks_std_pr
       linspace
     units: mm d-1
@@ -493,8 +494,8 @@ plotting:  # ------------------------------------- Plotting --------------------
 
 project: # argument to create the project
   name: ObsFlow - A workflow for observation data
-  version: 0.2
-  description: Workflow for extracting observation data and performing climatic analysis
+  version: 0.3
+  description: A xscen workflow for extracting observation data and performing climatic analysis
   id: obsflow
 
 scripting: # send an email when code fails or succeed

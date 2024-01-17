@@ -27,7 +27,7 @@ if __name__ == "__main__":
     daskkws = CONFIG["dask"].get("client", {})
     dskconf.set(**{k: v for k, v in CONFIG["dask"].items() if k != "client"})
 
-    # set xclim config to compute indicators on 3H data
+    # set xclim config to compute indicators on 3H data FixMe: can this be removed?
     xclim.set_options(data_validation="log")
 
     # copy config to the top of the log file
@@ -51,6 +51,7 @@ if __name__ == "__main__":
 
     # load project catalog
     pcat = xs.ProjectCatalog(CONFIG["paths"]["project_catalog"])
+    xs.catalog.ID_COLUMNS.append("type")
 
     # set some recurrent variables
     if CONFIG.get("to_dataset_dict", False):
@@ -67,10 +68,10 @@ if __name__ == "__main__":
             for ds_id, dc in cat.items():
                 # attrs of current iteration that are relevant now
                 cur = {
-                    "id": ds_id,
+                    "id": f'{ds_id}_{source_type}',
                     "xrfreq": "D",
                     "processing_level": "extracted",
-                    # "type": source_type,
+                    "type": source_type,
                 }
                 # check if steps was already done
                 if not pcat.exists_in_cat(**cur):
@@ -98,6 +99,9 @@ if __name__ == "__main__":
                                     .isel(time=0, drop=True)
                                     .notnull(),
                                 )
+                            # update 'cat:type' attribute (to separate station-pr from station-tas)
+                            ds.attrs["cat:type"] = cur["type"]
+                            ds.attrs["cat:id"] = cur['id']
 
                             # save to zarr
                             path = CONFIG["paths"]["task"].format(**cur)
@@ -120,7 +124,6 @@ if __name__ == "__main__":
                 "id": ds_input.attrs["cat:id"],
                 "xrfreq": ds_input.attrs["cat:xrfreq"],
                 "processing_level": "regridded",
-                # "type": source_type,
             }
             if not pcat.exists_in_cat(**cur):
                 with (
@@ -146,34 +149,39 @@ if __name__ == "__main__":
     # --- CLEAN UP ---
     if "cleanup" in CONFIG["tasks"]:
         # get all datasets to clean up and iter
-        cu_cats = xs.search_data_catalogs(**CONFIG["cleanup"]["search_data_catalogs"])
-        for cu_id, cu_cat in cu_cats.items():
+        # cu_cats = xs.search_data_catalogs(**CONFIG["cleanup"]["search_data_catalogs"])
+        # for cu_id, cu_cat in cu_cats.items():
+        input_dict = pcat.search(**CONFIG["cleanup"]["inputs"]).to_dataset_dict(**tdd)
+        # iter over datasets
+        for ds_id, ds_input in input_dict.items():
             cur = {
-                "id": cu_id,
-                "xrfreq": "D",
-                "processing_level": "cleaned",
-                # "type": source_type,
+                "id": '.'.join(ds_id.split('.')[:2]),
+                "xrfreq": ds_input.attrs["cat:xrfreq"],
+                "processing_level": "extracted-cleaned",
             }
             if not pcat.exists_in_cat(**cur):
                 with (
                     Client(**CONFIG["cleanup"]["dask"], **daskkws),
-                    xs.measure_time(name=f"clean {cu_id}", logger=logger),
+                    xs.measure_time(name=f"clean {ds_id}", logger=logger),
                 ):
-                    # put the individually adjusted variables back together in one ds
-                    freq_dict = xs.extract_dataset(catalog=cu_cat)
 
-                    # iter over dataset of different frequencies (usually just 'D')
-                    for key_freq, ds in freq_dict.items():
-                        # clean up the dataset
-                        ds_clean = xs.clean_up(
-                            ds=ds,
-                            **CONFIG["cleanup"]["xscen_clean_up"],
-                        )
+                    # clean up the dataset
+                    ds_clean = xs.clean_up(
+                        ds=ds_input,
+                        **CONFIG["cleanup"]["xscen_clean_up"],
+                    )
 
-                        # save and update
-                        path = f"{CONFIG['paths']['task']}".format(**cur)
-                        xs.save_to_zarr(ds_clean, path, **CONFIG["cleanup"]["save"])
-                        pcat.update_from_ds(ds=ds_clean, path=path)
+                    # save and update
+                    path = f"{CONFIG['paths']['task']}".format(**cur)
+                    save_kwargs = CONFIG["cleanup"]["save"]
+                    if "encoding" in save_kwargs:
+                        save_kwargs["encoding"] = {
+                            k: v
+                            for k, v in save_kwargs["encoding"].items()
+                            if k in ds_clean.data_vars
+                        }
+                    xs.save_to_zarr(ds_clean, path, **save_kwargs)
+                    pcat.update_from_ds(ds=ds_clean, path=path)
 
     # --- INDICATORS ---
     if "indicators" in CONFIG["tasks"]:
@@ -199,7 +207,6 @@ if __name__ == "__main__":
                         "id": ds_input.attrs["cat:id"],
                         "xrfreq": key_freq,
                         "processing_level": "indicators",
-                        # "type": source_type,
                     }
                     if not pcat.exists_in_cat(**cur):
                         # save to zarr
@@ -220,7 +227,6 @@ if __name__ == "__main__":
                 "id": ds_input.attrs["cat:id"],
                 "xrfreq": ds_input.attrs["cat:xrfreq"],
                 "processing_level": "climatology",
-                # "type": source_type,
             }
 
             if not pcat.exists_in_cat(**cur):
@@ -229,7 +235,7 @@ if __name__ == "__main__":
                       ):
                     # compute climatological mean
                     all_horizons = []
-                    for horizon in CONFIG["aggregate"]["periods"]:
+                    for period in CONFIG["aggregate"]["periods"]:
                         # compute properties for period when contained in data
                         if ds_input.time.dt.year.min() <= int(period[0]) and \
                                 ds_input.time.dt.year.max() >= int(period[1]):
@@ -328,14 +334,14 @@ if __name__ == "__main__":
         # get input and iter
         dict_input = pcat.search(**CONFIG["plotting"]["data"]).to_dataset_dict(**tdd)
         for key_input, ds_input in sorted(dict_input.items()):
+            if 'AHCCD' in key_input:  # currently AHCCD data are only plotted on top of reanalyis
+                continue
             with (Client(**CONFIG["plotting"]["dask"], **daskkws),
                   xs.measure_time(name=f"plotting {key_input}", logger=logger)):
 
                 # practice with monthly or seasonal data
                 # if 'AS-JAN' in key_input: continue
                 # if any(i for i in ['QS', 'MS'] if i in key_input): continue  # ToDo: remove this
-                if 'AHCCD' in key_input:  # currently AHCCD data are only plotted on top of reanalyis
-                    continue
 
                 import cartopy.crs as ccrs
                 import matplotlib.pyplot as plt
@@ -354,19 +360,28 @@ if __name__ == "__main__":
                 freq = CONFIG['plotting']['xrfreq_names'][ds_input.attrs['cat:xrfreq']]
 
                 for horizon in ds_input.horizon.values:  # ['1951-1980']:  #   #  # FixMe: remove this
+                    # ToDo: do only if variable in config to control plotting
                     for da_grid in ds_input.data_vars.values():
 
                         # if not all(i in da_grid.name for i in ['tg_mean_clim_mean', 'tg']): continue  # Todo: remove this
 
                         # get the corresponding AHCCD observation data -----------------------------------------
-                        if any(n in da_grid.name for n in ['tg', 'tx', 'tn']):
+                        #if any(n in da_grid.name for n in ['tg', 'tx', 'tn']):
+                        try:
                             da_station = pcat.search(
                                 source='AHCCD',
                                 processing_level='climatology',
-                                xrfreq=ds_input.attrs.get('cat:xrfreq')
+                                xrfreq=ds_input.attrs.get('cat:xrfreq'),
+                                variable=da_grid.name,
                             ).to_dataset()[da_grid.name]
-                        else:  # FixMe: remove this when AHCCD data are available for precipitation
+                        except ValueError:
                             da_station = None
+
+                        if horizon not in da_station.horizon.values:
+                            da_station = None
+
+                        # if da_station.name not in 'pr_std_clim_mean':  # ToDo: remove!
+                        #     continue
 
                         # get a plot_id for labeling and file naming -------------------------------------------
                         plot_id = (f"{CONFIG['plotting'][da_grid.name]['label']} "
@@ -390,14 +405,14 @@ if __name__ == "__main__":
                         # print(f'Trimmed ID: {da_grid.name} --- {plot_id}')
 
                         # convert units ToDo: this should be done in the clean-up step -------------------------
-                        from xclim.core import units
-                        try:
-                            if 'pr' not in da_grid.name:
-                                da_grid = units.convert_units_to(da_grid, CONFIG["plotting"][da_grid.name]["units"])
-                                if any(f"{n}_mean_clim_mean" in da_station.name for n in ['tg', 'tx', 'tn']): # Fixme this is so dirty! Because not all in ˚C
-                                    da_station = units.convert_units_to(da_station, CONFIG["plotting"][da_station.name]["units"])
-                        except (KeyError, ValueError):
-                            pass
+                        # from xclim.core import units
+                        # try:
+                        #     if 'pr' not in da_grid.name:
+                        #         da_grid = units.convert_units_to(da_grid, CONFIG["plotting"][da_grid.name]["units"])
+                        #         if any(f"{n}_mean_clim_mean" in da_station.name for n in ['tg', 'tx', 'tn']): # Fixme this is so dirty! Because not all in ˚C
+                        #             da_station = units.convert_units_to(da_station, CONFIG["plotting"][da_station.name]["units"])
+                        # except (KeyError, ValueError):
+                        #     pass
 
                         # selection and scaling of data ToDo: the scaling should be done in the clean-up step --
                         sel_kwargs = {"horizon": horizon}  # | {freq: da_grid[freq].values} if freq not in 'year' else {}
@@ -437,6 +452,8 @@ if __name__ == "__main__":
                                 "shrink": 0.4,
                                 "ticks": ticks,
                             },
+                            "xlim": [-79.5, -60],
+                            "ylim": [45, 61],
                         }
 
                         # remove col and col_wrap if annual, gridmap doesn't like it ToDo: fix in fg.gridmap? ----
@@ -464,27 +481,28 @@ if __name__ == "__main__":
                                 **gridmap_kwargs,
                             )
 
-                            # add station data -
-                            if da_station is not None:
-                                plot_kwargs_station = {
-                                                          k: plot_kwargs_grid[k]
-                                                          for k in ['x', 'y', 'vmin', 'vmax']
-                                                      } | {
-                                                          'edgecolor': 'dimgray',
-                                                          'linewidth': 0.01,
-                                                          'add_colorbar': False,
-                                                          'label': 'AHCCD-Stations'
-                                                      }
-                                scattermap_kwargs = {k: gridmap_kwargs[k] for k in
-                                                     ['transform', 'divergent', 'levels', 'frame']}
-
-                                for ax, sel_kwarg in zip(
-                                        fax.axs.flat if isinstance(fax, xarray.plot.FacetGrid) else [fax],
-                                        [{}] if freq in 'year' else [{freq: f} for f in da_station[freq].values]):
-                                    title = ax.get_title()
+                            # prepare kwargs for station data
+                            plot_kwargs_station = {
+                                                      k: plot_kwargs_grid[k]
+                                                      for k in ['x', 'y', 'vmin', 'vmax', 'xlim', 'ylim']
+                                                  } | {
+                                                      'edgecolor': 'dimgray',
+                                                      'linewidth': 0.01,
+                                                      'add_colorbar': False,
+                                                      'label': 'AHCCD-Stations'
+                                                  }
+                            scattermap_kwargs = {k: gridmap_kwargs[k] for k in
+                                                 ['transform', 'divergent', 'levels', 'frame']}
+                            for ax, sel_kwarg in zip(
+                                    fax.axs.flat if isinstance(fax, xarray.plot.FacetGrid) else [fax],
+                                    [{}] if freq in 'year' or da_station is None else
+                                    [{freq: f} for f in da_station[freq].values]):
+                                title = ax.get_title()
+                                # add station data
+                                if da_station is not None:
                                     data = da_station.sel(sel_kwargs | sel_kwarg) * scale_factor
                                     data = data.sel({data.dims[0]: ~np.isnan(data.squeeze().values)})  # take out nans # ToDo: The squeeze can be removed when data were regenergated without the year dimension
-                                    scax = fg.scattermap(
+                                    ax = fg.scattermap(
                                         # data=xr.Dataset({da_station.name: da_station.sel(sel_kwargs) * scale_factor}),
                                         data=data,
                                         ax=ax,
@@ -492,18 +510,23 @@ if __name__ == "__main__":
                                         **scattermap_kwargs,
                                         # cmap=[c.cmap for c in ax.get_children() if hasattr(c, 'cmap')][0],
                                     )
-                                    scax.set_title('')
-                                    scax.text(x=0.83, y=0.93, s=title, fontsize=14, fontweight='bold', transform=ax.transAxes)
-                                    scax.set_extent([-79.5, -60, 45, 61], crs=ccrs.PlateCarree())
-                            else:
-                                scax = fax.axs.flat[-1] if isinstance(fax, xarray.plot.FacetGrid) else fax
+                                else:
+                                    ax = fax.axs.flat[-1] if isinstance(fax, xarray.plot.FacetGrid) else fax
+                                ax.set_title('')
+                                facet_label = title if 'year' not in freq else 'ANN'
+                                ax.text(x=0.83, y=0.93, s=facet_label, fontsize=14, fontweight='bold', transform=ax.transAxes)
+                                ax.set_extent(
+                                    plot_kwargs_station['xlim'] +
+                                    plot_kwargs_station['ylim'],
+                                    crs=ccrs.PlateCarree()
+                                )
 
-                            scax.legend(loc='lower left',
-                                        fontsize=16,
-                                        bbox_to_anchor=(1.08, 1.0),
-                                        edgecolor='dimgray',
-                                        frameon=True
-                                        )
+                            ax.legend(loc='lower left',
+                                      fontsize=16,
+                                      bbox_to_anchor=(1.08, 1.0),
+                                      edgecolor='dimgray',
+                                      frameon=True
+                                      )
                             # Todo: Try fig.legend(...)
                             # fax.fig.legend(['A', 'B', 'C'],
                             #                loc='outside center right',
@@ -521,7 +544,7 @@ if __name__ == "__main__":
                             if 'year' not in freq:
                                 fig.suptitle(title, fontsize=26, fontweight='bold', y=0.96)
                             else:
-                                scax.set_title(title, fontsize=16, fontweight='bold')
+                                ax.set_title(title, fontsize=16, fontweight='bold')
                         # plt.show(block=False)
 
                         # prepare file_name, directory and save -------------------------------------------------
@@ -541,6 +564,7 @@ if __name__ == "__main__":
                         # save to png
                         logger.info(f"Saving {out_file}.png ...")
                         fig.savefig(out_file, dpi=200, bbox_inches='tight')
+                        plt.close(fig)
                         # print(f"Saving {out_file}.png ...")
 
     # --- ENSEMBLES ---
