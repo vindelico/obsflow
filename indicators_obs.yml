@@ -12,6 +12,7 @@ indicators:
     src_freq: null
     missing: skip
     cf_attrs:
+      units: degC
       long_name: annual mean of daily mean temperature
       var_name: tg_mean
     parameters:
@@ -21,6 +22,7 @@ indicators:
     src_freq: null
     missing: skip
     cf_attrs:
+      units: degC
       long_name: seasonal mean of daily mean temperature
       var_name: tg_mean
     parameters:
@@ -30,6 +32,7 @@ indicators:
     src_freq: null
     missing: skip
     cf_attrs:
+      units: degC
       long_name: monthly mean of daily mean temperature
       var_name: tg_mean
     parameters:
@@ -39,6 +42,7 @@ indicators:
     src_freq: null
     missing: skip
     cf_attrs:
+      units: degC
       long_name: annual mean of daily maximum temperature
       var_name: tx_mean
     parameters:
@@ -48,6 +52,7 @@ indicators:
     src_freq: null
     missing: skip
     cf_attrs:
+      units: degC
       long_name: seasonal mean of daily maximum temperature
       var_name: tx_mean
     parameters:
@@ -57,6 +62,7 @@ indicators:
     src_freq: null
     missing: skip
     cf_attrs:
+      units: degC
       long_name: monthly mean of daily maximum temperature
       var_name: tx_mean
     parameters:
@@ -66,6 +72,7 @@ indicators:
     missing: skip
     src_freq: null
     cf_attrs:
+      units: degC
       long_name: annual mean of daily minimum temperature
       var_name: tn_mean
     parameters:
@@ -75,6 +82,7 @@ indicators:
     missing: skip
     src_freq: null
     cf_attrs:
+      units: degC
       long_name: seasonal mean of daily minimum temperature
       var_name: tn_mean
     parameters:
@@ -84,6 +92,7 @@ indicators:
     src_freq: null
     missing: skip
     cf_attrs:
+      units: degC
       long_name: monthly mean of daily minimum temperature
       var_name: tn_mean
     parameters:
@@ -96,13 +105,14 @@ indicators:
     src_freq: null
     input:
       da: tas
-    parameters:
-      op: std
-      freq: YS
     cf_attrs:
+      units: degC
       long_name: annual standard deviation of daily mean temperature
 #      description: 'Annual standard deviation of daily mean temperature'
       var_name: tg_std
+    parameters:
+      op: std
+      freq: YS
   tg_std_seasonal:
     base: stats
 #    compute: select_resample_op
@@ -110,13 +120,14 @@ indicators:
     src_freq: null
     input:
       da: tas
-    parameters:
-      op: std
-      freq: QS-DEC
     cf_attrs:
+      units: degC
       long_name: seasonal standard deviation of daily mean temperature
 #      description: 'Seasonal standard deviation of daily mean temperature'
       var_name: tg_std
+    parameters:
+      op: std
+      freq: QS-DEC
   tg_std_monthly:
     base: stats
 #    compute: select_resample_op
@@ -124,13 +135,14 @@ indicators:
     src_freq: null
     input:
       da: tas
-    parameters:
-      op: std
-      freq: MS
     cf_attrs:
+      units: degC
       long_name: monthly standard deviation of daily mean temperature
 #      description: 'Monthly standard deviation of daily mean temperature'
       var_name: tg_std
+    parameters:
+      op: std
+      freq: MS
   tx_std_annual:
     base: stats
 #    compute: select_resample_op
@@ -138,13 +150,14 @@ indicators:
     src_freq: null
     input:
       da: tasmax
-    parameters:
-      op: std
-      freq: YS
     cf_attrs:
+      units: degC
       long_name: annual standard deviation of daily maximum temperature
 #      description: 'Standard deviation of daily maximum temperature over the year'
       var_name: tx_std
+    parameters:
+      op: std
+      freq: YS
   tx_std_seasonal:
     base: stats
 #    compute: select_resample_op
@@ -152,13 +165,14 @@ indicators:
     src_freq: null
     input:
       da: tasmax
-    parameters:
-      op: std
-      freq: QS-DEC
     cf_attrs:
+      units: degC
       long_name: seasonal standard deviation of daily maximum temperature
 #      description: 'Standard deviation of daily maximum temperature over the season'
       var_name: tx_std
+    parameters:
+      op: std
+      freq: QS-DEC
   tx_std_monthly:
     base: stats
 #    compute: select_resample_op
@@ -166,13 +180,14 @@ indicators:
     src_freq: null
     input:
       da: tasmax
-    parameters:
-      op: std
-      freq: MS
     cf_attrs:
+      units: degC
       long_name: monthly standard deviation of daily maximum temperature
 #      description: 'Standard deviation of daily maximum temperature over the month'
       var_name: tx_std
+    parameters:
+      op: std
+      freq: MS
   tn_std_annual:
     base: stats
 #    compute: select_resample_op
@@ -180,13 +195,14 @@ indicators:
     src_freq: null
     input:
       da: tasmin
-    parameters:
-      op: std
-      freq: YS
     cf_attrs:
+      units: degC
       long_name: annual standard deviation of daily minimum temperature
 #      description: 'Standard deviation of daily minimum temperature over the year'
       var_name: tn_std
+    parameters:
+      op: std
+      freq: YS
   tn_std_seasonal:
     base: stats
 #    compute: select_resample_op
@@ -194,13 +210,14 @@ indicators:
     src_freq: null
     input:
       da: tasmin
-    parameters:
-      op: std
-      freq: QS-DEC
     cf_attrs:
+      units: degC
       long_name: seasonal standard deviation of daily minimum temperature
 #      description: 'Standard deviation of daily minimum temperature over the season'
       var_name: tn_std
+    parameters:
+      op: std
+      freq: QS-DEC
   tn_std_monthly:
     base: stats
 #    compute: select_resample_op
@@ -208,13 +225,14 @@ indicators:
     src_freq: null
     input:
       da: tasmin
-    parameters:
-      op: std
-      freq: MS
     cf_attrs:
+      units: degC
       long_name: monthly standard deviation of daily minimum temperature
 #      description: 'Standard deviation of daily minimum temperature over the month'
       var_name: tn_std
+    parameters:
+      op: std
+      freq: MS
 
 # ---------------------------- Precipitation --------------------------------#
   pr_mean_annual:
@@ -222,6 +240,7 @@ indicators:
     src_freq: null
     missing: skip
     cf_attrs:
+#      units: mm d-1
       long_name: annual mean of daily precipitation
       var_name: pr_mean
     parameters:
@@ -231,6 +250,7 @@ indicators:
     src_freq: null
     missing: skip
     cf_attrs:
+#      units: mm d-1
       long_name: seasonal mean of daily precipitation
       var_name: pr_mean
     parameters:
@@ -240,6 +260,7 @@ indicators:
     src_freq: null
     missing: skip
     cf_attrs:
+#      units: mm d-1
       long_name: monthly mean of daily precipitation
       var_name: pr_mean
     parameters:
@@ -251,36 +272,39 @@ indicators:
     missing: skip
     input:
       da: pr
+    cf_attrs:
+#      units: mm d-1
+      long_name: annual standard deviation of daily precipitation
+      var_name: pr_std
     parameters:
       op: std
       freq: YS
-    cf_attrs:
-      long_name: annual standard deviation of daily precipitation
-      var_name: pr_std
   pr_std_seasonal:
     base: stats
     src_freq: null
     missing: skip
     input:
       da: pr
+    cf_attrs:
+#      units: mm d-1
+      long_name: seasonal standard deviation of daily precipitation
+      var_name: pr_std
     parameters:
       op: std
       freq: QS-DEC
-    cf_attrs:
-      long_name: seasonal standard deviation of daily precipitation
-      var_name: pr_std
   pr_std_monthly:
     base: stats
     src_freq: null
     missing: skip
     input:
       da: pr
+    cf_attrs:
+#      units: mm d-1
+      long_name: monthly standard deviation of daily precipitation
+      var_name: pr_std
     parameters:
       op: std
       freq: MS
-    cf_attrs:
-      long_name: monthly standard deviation of daily precipitation
-      var_name: pr_std
 
 
 

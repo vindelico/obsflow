@@ -340,8 +340,8 @@ if __name__ == "__main__":
                   xs.measure_time(name=f"plotting {key_input}", logger=logger)):
 
                 # practice with monthly or seasonal data
-                # if 'AS-JAN' in key_input: continue
-                # if any(i for i in ['QS', 'MS'] if i in key_input): continue  # ToDo: remove this
+                # if 'QS-DEC' not in key_input: continue # AS-JAN, QS-DEC, MS
+                # if any(i for i in ['QS', 'MS'] if i in key_input): continue #ToDo: remove this
 
                 import cartopy.crs as ccrs
                 import matplotlib.pyplot as plt
@@ -350,23 +350,28 @@ if __name__ == "__main__":
                 from pathlib import Path
 
                 import matplotlib
+
                 # matplotlib.use('wxAgg')
                 # matplotlib.use("TkAgg")
                 # matplotlib.use("macosx")
-                # matplotlib.use('Qt5Agg')
+                matplotlib.use('Qt5Agg')
 
                 fg.utils.set_mpl_style('ouranos')
                 projection = ccrs.LambertConformal()
-                freq = CONFIG['plotting']['xrfreq_names'][ds_input.attrs['cat:xrfreq']]
+                freq = CONFIG['plotting'][ds_input.attrs['cat:xrfreq']]['xrfreq_name']
 
-                for horizon in ds_input.horizon.values:  # ['1951-1980']:  #   #  # FixMe: remove this
+                for horizon in ds_input.horizon.values:   #  ['1981-2010']:  # FixMe: remove this
                     # ToDo: do only if variable in config to control plotting
                     for da_grid in ds_input.data_vars.values():
 
-                        # if not all(i in da_grid.name for i in ['tg_mean_clim_mean', 'tg']): continue  # Todo: remove this
+                        # if any(n in da_grid.name for n in ['tg', 'tx', 'tn']):
+                        #if 'RDRS' not in key_input: continue  # FixMe: remove this
+                        #if 'pr' not in da_grid.name: continue  # FixMe: remove this
+                        #if 'tg_mean_clim_mean' not in da_grid.name: continue  # FixMe: remove this
+                        #if 'year' in freq: continue  # FixMe: remove this
+                        #if 'month' in freq: continue # FixMe: remove this
 
                         # get the corresponding AHCCD observation data -----------------------------------------
-                        #if any(n in da_grid.name for n in ['tg', 'tx', 'tn']):
                         try:
                             da_station = pcat.search(
                                 source='AHCCD',
@@ -404,18 +409,9 @@ if __name__ == "__main__":
                         logger.info(f"Variable: {da_grid.name} --- Plotting {plot_id}")
                         # print(f'Trimmed ID: {da_grid.name} --- {plot_id}')
 
-                        # convert units ToDo: this should be done in the clean-up step -------------------------
-                        # from xclim.core import units
-                        # try:
-                        #     if 'pr' not in da_grid.name:
-                        #         da_grid = units.convert_units_to(da_grid, CONFIG["plotting"][da_grid.name]["units"])
-                        #         if any(f"{n}_mean_clim_mean" in da_station.name for n in ['tg', 'tx', 'tn']): # Fixme this is so dirty! Because not all in ˚C
-                        #             da_station = units.convert_units_to(da_station, CONFIG["plotting"][da_station.name]["units"])
-                        # except (KeyError, ValueError):
-                        #     pass
-
                         # selection and scaling of data ToDo: the scaling should be done in the clean-up step --
-                        sel_kwargs = {"horizon": horizon}  # | {freq: da_grid[freq].values} if freq not in 'year' else {}
+                        sel_kwargs = {
+                            "horizon": horizon}  # | {freq: da_grid[freq].values} if freq not in 'year' else {}
 
                         scale_factor = 1
                         if 'linregress' in da_grid.name:
@@ -426,13 +422,13 @@ if __name__ == "__main__":
                         use_attrs = {}  # {'suptitle': plot_id, 'title': ''}  # {"suptitle": plot_id, }
 
                         # figure arguments -
-                        fig_kwargs = {'figsize': (15, 21)}  # 'layout': 'tight', 'dpi': 300}  # 'layout': 'tight'
+                        fig_kwargs = CONFIG["plotting"][freq]["fig_kwargs"]
 
                         # levels and ticks -----------------------------------------------------------------------
                         if 'linspace' in CONFIG["plotting"][da_grid.name]["ticks"]:
                             levels = list(np.linspace(CONFIG["plotting"][da_grid.name]["limits"][freq]["vmin"],
-                                                 CONFIG["plotting"][da_grid.name]["limits"][freq]["vmax"],
-                                                 CONFIG["plotting"][da_grid.name]["levels"]))
+                                                      CONFIG["plotting"][da_grid.name]["limits"][freq]["vmax"],
+                                                      CONFIG["plotting"][da_grid.name]["levels"]))
                             ticks = levels[0::2]
                         else:
                             levels = CONFIG["plotting"][da_grid.name]["levels"]
@@ -443,33 +439,23 @@ if __name__ == "__main__":
 
                         # plot kwargs ----------------------------------------------------------------------------
                         plot_kwargs_grid = {
-                            "x": "lon",
-                            "y": "lat",
-                            "col": None if 'year' in freq else freq,
-                            "col_wrap": CONFIG["plotting"]["col_wrap"][freq],
+                            **CONFIG["plotting"][freq]["plot_kwargs_grid"],
                             **CONFIG["plotting"][da_grid.name]["limits"][freq],
-                            "cbar_kwargs": {
-                                "shrink": 0.4,
-                                "ticks": ticks,
-                            },
-                            "xlim": [-79.5, -60],
-                            "ylim": [45, 61],
                         }
-
-                        # remove col and col_wrap if annual, gridmap doesn't like it ToDo: fix in fg.gridmap? ----
-                        if 'year' in freq:
-                            plot_kwargs_grid.pop('col')
-                            plot_kwargs_grid.pop('col_wrap')
+                        plot_kwargs_grid = plot_kwargs_grid | {} if 'year' in freq else plot_kwargs_grid | {
+                            "col": freq,
+                            "col_wrap": CONFIG["plotting"][freq]["col_wrap"],
+                        }
+                        plot_kwargs_grid['cbar_kwargs'].setdefault('ticks', ticks)
+                        plot_kwargs_grid['cbar_kwargs'].setdefault('label', da_grid.attrs['units'])  # We made sure station data has the same units as the grid data
 
                         # gridmap kwargs -------------------------------------------------------------------------
                         gridmap_kwargs = {
                             "projection": projection,
                             "transform": ccrs.PlateCarree(),
-                            "features": {'states': {'edgecolor': 'dimgray', 'linewidth': 0.3}},
-                            "contourf": True,
                             "divergent": CONFIG["plotting"][da_grid.name]["divergent"],
                             "levels": levels,
-                            "frame": True,
+                            **CONFIG["plotting"]["gridmap_kwargs"],
                         }
 
                         # let's get to work plotting -------------------------------------------------------------
@@ -481,7 +467,7 @@ if __name__ == "__main__":
                                 **gridmap_kwargs,
                             )
 
-                            # prepare kwargs for station data
+                            # prepare kwargs for station data ToDo: Simplify this, too
                             plot_kwargs_station = {
                                                       k: plot_kwargs_grid[k]
                                                       for k in ['x', 'y', 'vmin', 'vmax', 'xlim', 'ylim']
@@ -501,7 +487,8 @@ if __name__ == "__main__":
                                 # add station data
                                 if da_station is not None:
                                     data = da_station.sel(sel_kwargs | sel_kwarg) * scale_factor
-                                    data = data.sel({data.dims[0]: ~np.isnan(data.squeeze().values)})  # take out nans # ToDo: The squeeze can be removed when data were regenergated without the year dimension
+                                    data = data.sel({data.dims[0]: ~np.isnan(
+                                        data.squeeze().values)})  # take out nans # ToDo: The squeeze can be removed when data were regenergated without the year dimension
                                     ax = fg.scattermap(
                                         # data=xr.Dataset({da_station.name: da_station.sel(sel_kwargs) * scale_factor}),
                                         data=data,
@@ -514,38 +501,21 @@ if __name__ == "__main__":
                                     ax = fax.axs.flat[-1] if isinstance(fax, xarray.plot.FacetGrid) else fax
                                 ax.set_title('')
                                 facet_label = title if 'year' not in freq else 'ANN'
-                                ax.text(x=0.83, y=0.93, s=facet_label, fontsize=14, fontweight='bold', transform=ax.transAxes)
+                                ax.text(x=0.8, y=0.93, s=facet_label, fontsize=14, fontweight='bold',
+                                        transform=ax.transAxes)
                                 ax.set_extent(
                                     plot_kwargs_station['xlim'] +
                                     plot_kwargs_station['ylim'],
                                     crs=ccrs.PlateCarree()
                                 )
 
-                            ax.legend(loc='lower left',
-                                      fontsize=16,
-                                      bbox_to_anchor=(1.08, 1.0),
-                                      edgecolor='dimgray',
-                                      frameon=True
-                                      )
-                            # Todo: Try fig.legend(...)
-                            # fax.fig.legend(['A', 'B', 'C'],
-                            #                loc='outside center right',
-                            #                fontsize=16,
-                            #                edgecolor='red',
-                            #                frameon=True)
                             fig = fax.fig if isinstance(fax, xarray.plot.FacetGrid) else fax.axes.figure
-                            fig.subplots_adjust(left=0.01,
-                                                    right=0.79,
-                                                    top=0.92,
-                                                    bottom=0.01,
-                                                    wspace=0.0,
-                                                    hspace=0.0)
-                            title = '\n'.join(wrap(plot_id[:1].upper() + plot_id[1:], 50))
-                            if 'year' not in freq:
-                                fig.suptitle(title, fontsize=26, fontweight='bold', y=0.96)
-                            else:
-                                ax.set_title(title, fontsize=16, fontweight='bold')
-                        # plt.show(block=False)
+                            ax.legend(**CONFIG["plotting"][freq]["legend_kwargs"])
+                            fig.subplots_adjust(**CONFIG["plotting"][freq]["subplots_adjust_kwargs"])
+                            title = '\n'.join(wrap(plot_id[:1].upper() + plot_id[1:],
+                                                   CONFIG["plotting"][freq]["suptitle_wrap"]))
+                            fig.suptitle(title, **CONFIG["plotting"][freq]["suptitle_kwargs"])
+                        #plt.show(block=False)
 
                         # prepare file_name, directory and save -------------------------------------------------
                         changes = {'standard deviation': 'std', '- ': '', '(': '', ')': '', ' ': '_', }
@@ -563,9 +533,8 @@ if __name__ == "__main__":
 
                         # save to png
                         logger.info(f"Saving {out_file}.png ...")
-                        fig.savefig(out_file, dpi=200, bbox_inches='tight')
+                        fig.savefig(out_file, **CONFIG["plotting"]["savefig_kwargs"])
                         plt.close(fig)
-                        # print(f"Saving {out_file}.png ...")
 
     # --- ENSEMBLES ---
     if "ensembles" in CONFIG["tasks"]:

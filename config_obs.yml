@@ -11,13 +11,13 @@
 #  (by modifying extract:simulation:search_data_catalogs:other_search_criteria:)
 # to make sure all tasks work properly before launching it for all simulations.
 tasks:
-  #- extract # Extract the simulation and reference dataset with the right domain and period.
-  #- regrid # Regrid the simulation onto the reference grid.
-  #- cleanup # Join each individually adjusted variable back in one scenario dataset and clean up other details.
-  #- indicators # Compute xclim indicators on the scenario.
+  #- extract # Extract station data, (gridded observation data), and reanalysis data.
+  #- regrid # Regrid the simulation onto a common grid (ERA5-Land).
+  #- cleanup # Handle different units in datasets.
+  #- indicators # Compute xclim indicators on the datasets.
   #- climatologies # Compute climatological operations for the indicators (mean, std, trend).
-  - plotting # Make plots of results from climatological operations.
-  #- ensembles # Compute the ensemble statistics on indicators, climatology and deltas.
+  - plotting # Make plots of results from climatological operations for annual, seasonal, and monthly data.
+  #- "ensembles" # Compute/compare different datasets and assess uncertainties in historical data (ToDo)
 
 # Task Arguments
 
@@ -296,7 +296,7 @@ aggregate:  # ------------------------------------- Climatological Operations --
     op: linregress
     to_level: climatology
   save:
-    mode: 'o'
+    mode: o
 
 plotting:  # ------------------------------------- Plotting -------------------------------------
   dask:
@@ -307,16 +307,126 @@ plotting:  # ------------------------------------- Plotting --------------------
 #            ['1981', '2010'], ['1991', '2020'], ['1991', '2018']]
   data:
     processing_level: climatology
-  xrfreq_names:
-    AS-JAN: year
-    QS-DEC: season
-    MS: month
-  col_wrap:
-    year:
-    season: 2
-    month: 3
+  # global plot arguments
   gridmap_kwargs:
     contourf: True
+    frame: True
+    features:
+      states:
+        edgecolor: 'dimgray'
+        linewidth: 0.3
+  # Translate cat:xrfreq to xrfreq_name
+  AS-JAN:
+    xrfreq_name: year
+  QS-DEC:
+    xrfreq_name: season
+  MS:
+    xrfreq_name: month
+  # frequency specific plotting arguments
+  year:
+    fig_kwargs:
+      figsize: [8, 8]
+#      layout: constrained
+      gridspec_kw:
+        wspace: 0.0
+        hspace: 0.0
+    plot_kwargs_grid:
+      x: lon
+      y: lat
+      cbar_kwargs:
+        shrink: 0.4
+        pad: 0.12
+      xlim: &xlim
+        - -79.5
+        - -60
+      ylim: &ylim
+        - 45
+        - 61
+    col_wrap:
+    suptitle_wrap: 50
+    suptitle_kwargs:
+      fontsize: 16
+      fontweight: bold
+      y: 0.98
+    subplots_adjust_kwargs:
+      left: 0.01
+      right: 1.0
+      bottom: 0.0
+      top: 0.95
+      wspace: 0.0
+      hspace: 0.0
+    legend_kwargs:
+      loc: 'lower left'
+      fontsize: 12
+      bbox_to_anchor: [1.005, 0.15]
+      edgecolor: 'dimgray'
+      frameon: True
+  season:
+    fig_kwargs:
+      figsize: [10, 9.51]
+    plot_kwargs_grid:
+      x: lon
+      y: lat
+      cbar_kwargs:
+        shrink: 0.4
+        pad: 0.35
+      xlim: *xlim
+      ylim: *ylim
+    col_wrap: 2
+    suptitle_wrap: 50
+    suptitle_kwargs:
+      fontsize: 16
+      fontweight: bold
+      y: 0.99
+    subplots_adjust_kwargs:
+      left: 0.01
+      right: 0.75
+      bottom: 0.01
+      top: 0.93
+      wspace: 0.0
+      hspace: 0.0
+    legend_kwargs:
+      loc: 'lower left'
+      fontsize: 12
+      bbox_to_anchor: [1.04, 0.47]
+      edgecolor: 'dimgray'
+      frameon: True
+  month:
+    fig_kwargs:
+      figsize: [10, 12.37]
+    plot_kwargs_grid:
+      x: lon
+      y: lat
+      cbar_kwargs:
+        shrink: 0.4
+        pad: 0.35
+      xlim: *xlim
+      ylim: *ylim
+    col_wrap: 3
+    suptitle_wrap: 50
+    suptitle_kwargs:
+      fontsize: 16
+      fontweight: bold
+      y: 0.99
+    subplots_adjust_kwargs:
+      left: 0.01
+      right: .75
+      bottom: 0.0
+      top: 0.94
+      wspace: 0.0
+      hspace: 0.0
+    legend_kwargs:
+      loc: 'lower left'
+      fontsize: 12
+      bbox_to_anchor: [1.04, 1.0]
+      edgecolor: 'dimgray'
+      frameon: True
+  # saving figures
+  savefig_kwargs:
+    dpi: 200
+    bbox_inches: tight
+    pad_inches: 0.1
+
 # ------------------------------------- Temperature Plots -------------------------------------
   # mean
   tg_mean_clim_mean: &mean
@@ -348,9 +458,9 @@ plotting:  # ------------------------------------- Plotting --------------------
         vmax: 20
       season: *vmin_vmax_std_tmp
       month: *vmin_vmax_std_tmp
-    levels: &levels_std
-      [0, 0.5, 1, 2, 3, 4, 5, 7.5, 10, 12.5, 15, 20]
-    ticks: *levels_std
+    levels: &levels_std_tmp
+      [0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 7.5, 10.0, 12.5, 15.0, 20.0]
+    ticks: *levels_std_tmp
     units: K
     divergent: False
   tn_mean_clim_std: *std_inter
@@ -363,8 +473,8 @@ plotting:  # ------------------------------------- Plotting --------------------
       year: *vmin_vmax_std_tmp
       season: *vmin_vmax_std_tmp
       month: *vmin_vmax_std_tmp
-    levels: *levels_std
-    ticks: *levels_std
+    levels: *levels_std_tmp
+    ticks: *levels_std_tmp
     units: K
     divergent: False
   tn_std_clim_mean: *std_intra
@@ -377,8 +487,8 @@ plotting:  # ------------------------------------- Plotting --------------------
       year: *vmin_vmax_std_tmp
       season: *vmin_vmax_std_tmp
       month: *vmin_vmax_std_tmp
-    levels: *levels_std
-    ticks: *levels_std
+    levels: *levels_std_tmp
+    ticks: *levels_std_tmp
     units: K
     divergent: False
   tn_std_clim_total: *std_total
@@ -421,15 +531,14 @@ plotting:  # ------------------------------------- Plotting --------------------
     agg_operation: std
     label: interannual
     limits:
-      year: &vmin_vmax_std_pr
+      year: &vmin_vmax_std_pr_inter
         vmin: 0
-        vmax: 10
-      season: *vmin_vmax_std_pr
-      month: *vmin_vmax_std_pr
+        vmax: 1
+      season: *vmin_vmax_std_pr_inter
+      month: *vmin_vmax_std_pr_inter
     levels: &levels_std_pr
-      11
-    ticks: &ticks_std_pr
-      linspace
+      [0.0, 0.25, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 7.5, 10.0, 15.0, 20.0, 25.0]
+    ticks: &levels_std_pr
     units: mm d-1
     divergent: False
   # intra
@@ -437,11 +546,13 @@ plotting:  # ------------------------------------- Plotting --------------------
     agg_operation: mean
     label: intra
     limits:
-      year: *vmin_vmax_std_pr
+      year: &vmin_vmax_std_pr
+        vmin: 0
+        vmax: 10
       season: *vmin_vmax_std_pr
       month: *vmin_vmax_std_pr
     levels: *levels_std_pr
-    ticks: *ticks_std_pr
+    ticks: *levels_std_pr
     units: mm d-1
     divergent: False
   # total
