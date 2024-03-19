@@ -230,7 +230,7 @@ cleanup:
 #      pr: D
 #    allow_conversion: True
 #    allow_resampling: False
-    processing_level: extracted
+    processing_level: extracted # ToDo: change to regridded!
   xscen_clean_up:
     to_level: extracted-cleaned
     maybe_unstack_dict:
@@ -538,7 +538,7 @@ plotting:  # ------------------------------------- Plotting --------------------
       month: *vmin_vmax_std_pr_inter
     levels: &levels_std_pr
       [0.0, 0.25, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 7.5, 10.0, 15.0, 20.0, 25.0]
-    ticks: &levels_std_pr
+    ticks: &ticks_std_pr
     units: mm d-1
     divergent: False
   # intra
