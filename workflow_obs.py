@@ -192,13 +192,24 @@ if __name__ == "__main__":
         for key_input, ds_input in dict_input.items():
             with (
                 Client(**CONFIG["indicators"]["dask"], **daskkws),
-                xs.measure_time(name=f"indicators {key_input}", logger=logger),
+                xs.measure_time(name=f"indicators {key_input}", logger=logger)
             ):
+                if 'pr' in ds_input.data_vars:
+                    # reference percentiles for precipitation
+                    ref_period = slice(CONFIG["indicators"]["ref_percentiles"]["from"],
+                                       CONFIG["indicators"]["ref_percentiles"]["to"])
+                    ds_input['pr_per95'] = (ds_input['pr']
+                                            .sel(time=ref_period)
+                                            .quantile(0.95, dim='time', keep_attrs=True))
+                    ds_input['pr_per99'] = (ds_input['pr']
+                                            .sel(time=ref_period)
+                                            .quantile(0.99, dim='time', keep_attrs=True))
 
                 # compute indicators
                 dict_indicator = xs.compute_indicators(
                     ds=ds_input,
-                    indicators=xs.indicators.select_inds_for_avail_vars(ds_input, CONFIG["indicators"]["path_yml"]),
+                    indicators=xs.indicators.select_inds_for_avail_vars(ds_input,
+                                                                        CONFIG["indicators"]["path_yml"]),
                 )
 
                 # iter over output dictionary (keys are freqs)
@@ -219,7 +230,7 @@ if __name__ == "__main__":
     # --- CLIMATOLOGIES ---
     if "climatologies" in CONFIG["tasks"]:
         # iterate over inputs
-        ind_dict = pcat.search(**CONFIG["aggregate"]["input"]["obs"]).to_dataset_dict(
+        ind_dict = pcat.search(**CONFIG["aggregate"]["input"]).to_dataset_dict(
             **tdd
         )
         for key_input, ds_input in sorted(ind_dict.items()):
@@ -236,7 +247,7 @@ if __name__ == "__main__":
                     # compute climatological mean
                     all_horizons = []
                     for period in CONFIG["aggregate"]["periods"]:
-                        # compute properties for period when contained in data
+                        # compute climatologies for period when contained in data
                         if ds_input.time.dt.year.min() <= int(period[0]) and \
                                 ds_input.time.dt.year.max() >= int(period[1]):
 
@@ -334,7 +345,7 @@ if __name__ == "__main__":
         # get input and iter
         dict_input = pcat.search(**CONFIG["plotting"]["data"]).to_dataset_dict(**tdd)
         for key_input, ds_input in sorted(dict_input.items()):
-            if 'AHCCD' in key_input:  # currently AHCCD data are only plotted on top of reanalyis
+            if 'AHCCD' in key_input:  # currently AHCCD data are only plotted on top of reanalysis data
                 continue
             with (Client(**CONFIG["plotting"]["dask"], **daskkws),
                   xs.measure_time(name=f"plotting {key_input}", logger=logger)):
@@ -360,16 +371,16 @@ if __name__ == "__main__":
                 projection = ccrs.LambertConformal()
                 freq = CONFIG['plotting'][ds_input.attrs['cat:xrfreq']]['xrfreq_name']
 
-                for horizon in ds_input.horizon.values:   #  ['1981-2010']:  # FixMe: remove this
+                for horizon in ds_input.horizon.values:  # ['1981-2010']:  # FixMe: remove this
                     # ToDo: do only if variable in config to control plotting
                     for da_grid in ds_input.data_vars.values():
 
                         # if any(n in da_grid.name for n in ['tg', 'tx', 'tn']):
-                        #if 'RDRS' not in key_input: continue  # FixMe: remove this
-                        #if 'pr' not in da_grid.name: continue  # FixMe: remove this
-                        #if 'tg_mean_clim_mean' not in da_grid.name: continue  # FixMe: remove this
-                        #if 'year' in freq: continue  # FixMe: remove this
-                        #if 'month' in freq: continue # FixMe: remove this
+                        # if 'RDRS' not in key_input: continue  # FixMe: remove this
+                        # if 'pr' not in da_grid.name: continue  # FixMe: remove this
+                        # if 'tg_mean_clim_mean' not in da_grid.name: continue  # FixMe: remove this
+                        # if 'year' in freq: continue  # FixMe: remove this
+                        # if 'month' in freq: continue # FixMe: remove this
 
                         # get the corresponding AHCCD observation data -----------------------------------------
                         try:
@@ -447,7 +458,8 @@ if __name__ == "__main__":
                             "col_wrap": CONFIG["plotting"][freq]["col_wrap"],
                         }
                         plot_kwargs_grid['cbar_kwargs'].setdefault('ticks', ticks)
-                        plot_kwargs_grid['cbar_kwargs'].setdefault('label', da_grid.attrs['units'])  # We made sure station data has the same units as the grid data
+                        plot_kwargs_grid['cbar_kwargs'].setdefault('label', da_grid.attrs[
+                            'units'])  # We made sure station data has the same units as the grid data
 
                         # gridmap kwargs -------------------------------------------------------------------------
                         gridmap_kwargs = {
@@ -467,15 +479,19 @@ if __name__ == "__main__":
                                 **gridmap_kwargs,
                             )
 
+                            plt.show(block=False)
+
                             # prepare kwargs for station data ToDo: Simplify this, too
                             plot_kwargs_station = {
                                                       k: plot_kwargs_grid[k]
                                                       for k in ['x', 'y', 'vmin', 'vmax', 'xlim', 'ylim']
                                                   } | {
                                                       'edgecolor': 'dimgray',
-                                                      'linewidth': 0.01,
+                                                      'linewidths': 0.5,
+                                                      's': 12,
                                                       'add_colorbar': False,
                                                       'label': 'AHCCD-Stations'
+
                                                   }
                             scattermap_kwargs = {k: gridmap_kwargs[k] for k in
                                                  ['transform', 'divergent', 'levels', 'frame']}
@@ -484,6 +500,29 @@ if __name__ == "__main__":
                                     [{}] if freq in 'year' or da_station is None else
                                     [{freq: f} for f in da_station[freq].values]):
                                 title = ax.get_title()
+                                # add significance hatching when plotting linear trends
+                                if 'linregress' in da_grid.name:
+                                    sel_sign_kwargs = (sel_kwargs | sel_kwarg).copy()
+                                    sel_sign_kwargs['linreg_param'] = 'pvalue'
+                                    sign_gridmap_kwargs = {k: v for k, v in gridmap_kwargs.items()
+                                                           if k in ['projection', 'transform', 'frame']}
+                                    plt.rcParams['hatch.linewidth'] = 0.3
+                                    plt.rcParams['hatch.color'] = 'black'
+                                    hatches = ['////']
+                                    ax = fg.hatchmap(
+                                        data=da_grid.sel(sel_sign_kwargs).where(da_grid.sel(sel_sign_kwargs) > 0.05),
+                                        ax=ax,
+                                        plot_kw={'hatches': hatches,
+                                                 'x': 'lon',
+                                                 'y': 'lat',
+                                                 'xlim': plot_kwargs_grid['xlim'],
+                                                 'ylim': plot_kwargs_grid['ylim'],
+                                                 'label': 'not significant',
+                                                 },
+                                        # plot_kw=plot_kwargs_grid,
+                                        **sign_gridmap_kwargs,
+                                        legend_kw=False,
+                                    )
                                 # add station data
                                 if da_station is not None:
                                     data = da_station.sel(sel_kwargs | sel_kwarg) * scale_factor
@@ -515,7 +554,7 @@ if __name__ == "__main__":
                             title = '\n'.join(wrap(plot_id[:1].upper() + plot_id[1:],
                                                    CONFIG["plotting"][freq]["suptitle_wrap"]))
                             fig.suptitle(title, **CONFIG["plotting"][freq]["suptitle_kwargs"])
-                        #plt.show(block=False)
+                        # plt.show(block=False)
 
                         # prepare file_name, directory and save -------------------------------------------------
                         changes = {'standard deviation': 'std', '- ': '', '(': '', ')': '', ' ': '_', }
