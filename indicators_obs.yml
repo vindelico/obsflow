@@ -4,6 +4,15 @@ doc: |
   ==========
   Indicator module for observation data analysis.
 realm: atmos
+variables:
+  pr_per95:
+    canonical_units: mm d-1
+    description: 95th percentile of daily precipitation
+    cell_methods: 'time: n-th percentile'
+  pr_per99:
+    canonical_units: mm d-1
+    description: 99th percentile of daily precipitation
+    cell_methods: 'time: n-th percentile'
 
 indicators:
 #-------------------------------- Mean ------------------------------------#
@@ -234,13 +243,153 @@ indicators:
       op: std
       freq: MS
 
-# ---------------------------- Precipitation --------------------------------#
+# ----------------------------- Extreme Temperatures ---------------------------------#
+  days_above_0_annual:
+    base: tg_days_above
+    cf_attrs:
+      long_name: annual number of days with mean temperature above 0 ˚C
+      var_name: days_above_0
+    parameters:
+      thresh: 0 degC
+      freq: YS
+  days_above_0_seasonal:
+    base: tg_days_above
+    cf_attrs:
+      long_name: seasonal number of days with mean temperature above 0 ˚C
+      var_name: days_above_0
+    parameters:
+      thresh: 0 degC
+      freq: QS-DEC
+  days_above_0_monthly:
+    base: tg_days_above
+    cf_attrs:
+      long_name: monthly number of days with mean temperature above 0 ˚C
+      var_name: days_above_0
+    parameters:
+      thresh: 0 degC
+      freq: MS
+  days_below_m25_annual:
+    base: tg_days_below
+    cf_attrs:
+      long_name: annual number of days with mean temperature below -25 ˚C
+      var_name: days_below_m25
+    parameters:
+      thresh: -25 degC
+      freq: YS
+  days_below_m25_seasonal:
+    base: tg_days_below
+    cf_attrs:
+      long_name: seasonal number of days with mean temperature below -25 ˚C
+      var_name: days_below_m25
+    parameters:
+      thresh: -25 degC
+      freq: QS-DEC
+  days_below_m25_monthly:
+    base: tg_days_below
+    cf_attrs:
+      long_name: monthly number of days with mean temperature below -25 ˚C
+      var_name: days_below_m25
+    parameters:
+      thresh: -25 degC
+      freq: MS
+  hot_days_30_annual:
+    base: tx_days_above
+    cf_attrs:
+      long_name: annual number of hot days (Tmax > 30 ˚C)
+      var_name: hot_days_gt_30
+    parameters:
+      thresh: 30 degC
+      freq: YS
+  hot_days_32_annual:
+    base: tx_days_above
+    cf_attrs:
+      long_name: annual number of hot days (Tmax > 32 ˚C)
+      var_name: hot_days_gt_32
+    parameters:
+      thresh: 32 degC
+      freq: YS
+  tropical_nights_gt_22_annual:
+    base: tn_days_above
+    cf_attrs:
+      long_name: annual number of tropical nights (Tmin > 22 ˚C)
+      var_name: tropical_nights_gt_22
+    parameters:
+      thresh: 22 degC
+      freq: YS
+  tropical_nights_gt_20_annual:
+    base: tn_days_above
+    cf_attrs:
+      long_name: annual number of tropical nights (Tmin > 20 ˚C)
+      var_name: tropical_nights_gt_20
+    parameters:
+      thresh: 20 degC
+      freq: YS
+  heat_wave_days_class3:
+    base: heat_wave_frequency
+    cf_attrs:
+      long_name: annual number of heat wave days (Tmin > 16 ˚C and Tmax > 31 ˚C)
+      var_name: heat_wave_days_class3
+    parameters:
+      thresh_tasmin: 16 degC
+      thresh_tasmax: 31 degC
+      window: 1
+      freq: YS
+  heat_wave_3days_frequency_class3:
+    base: heat_wave_frequency
+    cf_attrs:
+      long_name: annual number of heat wave events of three days or more (Tmin > 16 ˚C and Tmax > 31 ˚C)
+      var_name: heat_wave_3days_frequency_class3
+    parameters:
+      thresh_tasmin: 16 degC
+      thresh_tasmax: 31 degC
+      window: 3
+      freq: YS
+
+# ---------------------------- Agro-climatic Indicators -------------------------------#
+  growing_degree_days_gt_4_annual:
+    base: growing_degree_days
+    cf_attrs:
+      long_name: annual growing degree days with a threshold of 4 ˚C
+      var_name: growing_degree_days_gt_4
+    parameters:
+      thresh: 4 degC
+      freq: YS
+  freezing_degree_days_lt_0_annual:
+    base: freezing_degree_days
+    cf_attrs:
+      long_name: annual freezing degree days with a threshold of 0 ˚C
+      var_name: freezing_degree_days_lt_0
+    parameters:
+      thresh: 0 degC
+      freq: YS
+  freeze_thaw_cycles_annual:
+    base: dlyfrzthw
+    cf_attrs:
+      long_name: annual number of freeze-thaw cycles
+      var_name: freeze_thaw_cycles
+    parameters:
+      freq: YS
+  freeze_thaw_cycles_seasonal:
+    base: dlyfrzthw
+    cf_attrs:
+      long_name: seasonal number of freeze-thaw cycles
+      var_name: freeze_thaw_cycles
+    parameters:
+      freq: QS-DEC
+  freeze_thaw_cycles_monthly:
+    base: dlyfrzthw
+    cf_attrs:
+      long_name: monthly number of freeze-thaw cycles
+      var_name: freeze_thaw_cycles
+    parameters:
+      freq: MS
+
+# --------------------------------- Precipitation ------------------------------------#
   pr_mean_annual:
     base: prcpavg
     src_freq: null
     missing: skip
     cf_attrs:
-#      units: mm d-1
       long_name: annual mean of daily precipitation
       var_name: pr_mean
     parameters:
@@ -250,7 +399,6 @@ indicators:
     src_freq: null
     missing: skip
     cf_attrs:
-#      units: mm d-1
       long_name: seasonal mean of daily precipitation
       var_name: pr_mean
     parameters:
@@ -260,12 +408,12 @@ indicators:
     src_freq: null
     missing: skip
     cf_attrs:
-#      units: mm d-1
       long_name: monthly mean of daily precipitation
       var_name: pr_mean
     parameters:
       freq: MS
-# ---------------------------- Standard Deviation Precip Intra --------------------------------#
+
+# ---------------------- Standard Deviation Precip Intra -------------------------#
   pr_std_annual:
     base: stats
     src_freq: null
@@ -305,6 +453,119 @@ indicators:
     parameters:
       op: std
       freq: MS
+
+# ----------------------------- Extreme Precipitation ---------------------------------#
+  RX1day_annual:
+    base: max_n_day_precipitation_amount
+    cf_attrs:
+      long_name: annual maximum 1-day precipitation amount
+      var_name: RX1day
+    parameters:
+        freq: YS
+        window: 1
+  RX1day_seasonal:
+    base: max_n_day_precipitation_amount
+    src_freq: null
+    missing: skip
+    cf_attrs:
+      long_name: seasonal maximum 1-day precipitation amount
+      var_name: RX1day
+    parameters:
+        freq: QS-DEC
+        window: 1
+  RX1day_monthly:
+    base: max_n_day_precipitation_amount
+    cf_attrs:
+      long_name: monthly maximum 1-day precipitation amount
+      var_name: RX1day
+    parameters:
+        freq: MS
+        window: 1
+  RX5day_annual:
+    base: max_n_day_precipitation_amount
+    cf_attrs:
+      long_name: annual maximum 5-day precipitation amount
+      var_name: RX5day
+    parameters:
+      freq: YS
+      window: 5
+  RX5day_seasonal:
+    base: max_n_day_precipitation_amount
+    cf_attrs:
+      long_name: seasonal maximum 5-day precipitation amount
+      var_name: RX5day
+    parameters:
+      freq: QS-DEC
+      window: 5
+  RX5day_monthly:
+    base: max_n_day_precipitation_amount
+    cf_attrs:
+      long_name: monthly maximum 5-day precipitation amount
+      var_name: RX5day
+    parameters:
+      freq: MS
+      window: 5
+  R95pTOT_annual:
+    base: fraction_over_precip_thresh
+    input:
+      pr_per: pr_per95
+    cf_attrs:
+      long_name: Fraction of annual precipitation due to wet days with daily precipitation above the 95th percentile.
+      var_name: R95pTOT
+      units: 1
+    parameters:
+      freq: YS
+  R95pTOT_seasonal:
+    base: fraction_over_precip_thresh
+    input:
+      pr_per: pr_per95
+    cf_attrs:
+      long_name: Fraction of seasonal precipitation due to wet days with daily precipitation above the 95th percentile.
+      var_name: R95pTOT
+      units: 1
+    parameters:
+      freq: QS-DEC
+  R95pTOT_monthly:
+    base: fraction_over_precip_thresh
+    input:
+      pr_per: pr_per95
+    cf_attrs:
+      long_name: Fraction of monthly precipitation due to wet days with daily precipitation above the 95th percentile.
+      var_name: R95pTOT
+      units: 1
+    parameters:
+      freq: MS
+  R99pTOT_annual:
+    base: fraction_over_precip_thresh
+    input:
+      pr_per: pr_per99
+    cf_attrs:
+      long_name: Fraction of annual precipitation due to very wet days with daily precipitation above the 99th percentile.
+      var_name: R99pTOT
+      units: 1
+    parameters:
+      freq: YS
+  R99pTOT_seasonal:
+    base: fraction_over_precip_thresh
+    input:
+      pr_per: pr_per99
+    cf_attrs:
+      long_name: Fraction of seasonal precipitation due to very wet days with daily precipitation above the 99th percentile.
+      var_name: R99pTOT
+      units: 1
+    parameters:
+      freq: QS-DEC
+  R99pTOT_monthly:
+    base: fraction_over_precip_thresh
+    input:
+      pr_per: pr_per99
+    cf_attrs:
+      long_name: Fraction of monthly precipitation due to very wet days with daily precipitation above the 99th percentile.
+      var_name: R99pTOT
+      units: 1
+    parameters:
+      freq: MS
+
 
 
 
