@@ -14,9 +14,9 @@ tasks:
   #- extract # Extract station data, (gridded observation data), and reanalysis data.
   #- regrid # Regrid the simulation onto a common grid (ERA5-Land).
   #- cleanup # Handle different units in datasets.
-  #- indicators # Compute xclim indicators on the datasets.
-  #- climatologies # Compute climatological operations for the indicators (mean, std, trend).
-  - plotting # Make plots of results from climatological operations for annual, seasonal, and monthly data.
+  - indicators # Compute xclim indicators on the datasets.
+  - climatologies # Compute climatological operations for the indicators (mean, std, trend).
+  #- plotting # Make plots of results from climatological operations for annual, seasonal, and monthly data.
   #- "ensembles" # Compute/compare different datasets and assess uncertainties in historical data (ToDo)
 
 # Task Arguments
@@ -268,6 +268,9 @@ indicators:  # ------------------------------------- Indicators ----------------
     memory_limit: "8GB"
   inputs:
     processing_level: extracted-cleaned
+  ref_percentiles:
+    from: 1981-01-01
+    to: 2010-12-31
   compute_indicators:
     to_level: indicators
   save: #*save_time_-1
@@ -283,8 +286,10 @@ aggregate:  # ------------------------------------- Climatological Operations --
   periods:
     - ['1951', '1980']
     - ['1961', '1990']
+    - ['1961', '2020']
     - ['1971', '2000']
     - ['1981', '2010']
+    - ['1981', '2018']
     - ['1988', '2017']
     - ['1991', '2018']
     - ['1991', '2020']
@@ -389,7 +394,7 @@ plotting:  # ------------------------------------- Plotting --------------------
     legend_kwargs:
       loc: 'lower left'
       fontsize: 12
-      bbox_to_anchor: [1.005, 0.1]
+      bbox_to_anchor: [1.005, 0.05]
       markerscale: 2
       edgecolor: 'dimgray'
       frameon: True
@@ -569,53 +574,79 @@ plotting:  # ------------------------------------- Plotting --------------------
     label: ''
     limits:
       year:
-        vmin: 40
-        vmax: 300
+        vmin: 50
+        vmax: 290
       season:
         vmin: 0
-        vmax: 100
+        vmax: 90
       month:
         vmin: 0
-        vmax: 31
+        vmax: 30
+    levels: 16
+    ticks: linspace
+    units: days
+    divergent: False
+  days_above_0_clim_std:
+    label: ''
+    limits:
+      year: &vmin_vmax_std_days_above_0
+        vmin: 0
+        vmax: 10
+      season: *vmin_vmax_std_days_above_0
+      month: *vmin_vmax_std_days_above_0
     levels: 21
     ticks: linspace
     units: days
     divergent: False
-  days_above_0_clim_std: *mean_and_std_days_above_0   # ToDo: Are these good values?
   days_below_m25_clim_linregress:
     label: ''
     limits:
       year: &vmin_vmax_trend_days_below_m25        # ToDo: Are these good values?
-        vmin: -20
-        vmax: 20
+        vmin: -8
+        vmax: 8
       season: *vmin_vmax_trend_days_below_m25
       month: *vmin_vmax_trend_days_below_m25
-    levels: 21
+    levels: 17
     ticks: linspace
     units: days
     divergent: True
   days_below_m25_clim_mean: &mean_and_std_days_below_m25
     label: ''
     limits:
-      year: &vmin_vmax_mean_days_below_m25
+      year:
         vmin: 0
-        vmax: 80
-      season: *vmin_vmax_mean_days_below_m25
-      month: *vmin_vmax_mean_days_below_m25
-    levels: 17
+        vmax: 90
+      season:
+        vmin: 0
+        vmax: 60
+      month:
+        vmin: 0
+        vmax: 30
+    levels: 16
     ticks: linspace
     units: days
     divergent: False
-  days_below_m25_clim_std: *mean_and_std_days_below_m25    # ToDo: Are these good values?
+  days_below_m25_clim_std:
+    label: ''
+    limits:
+      year: &vmin_vmax_std_days_below_m25
+        vmin: 0
+        vmax: 20
+      season: *vmin_vmax_std_days_below_m25
+      month: *vmin_vmax_std_days_below_m25
+    levels: 11
+    ticks: linspace
+    units: days
+    divergent: False
   heat_wave_3days_frequency_class3_clim_linregress:
     label: ''
     limits:
       year: &vmin_vmax_trend_heat_wave_3days_frequency_class3
-        vmin: -5
-        vmax: 5
+        vmin: -2
+        vmax: 2
       season: *vmin_vmax_trend_heat_wave_3days_frequency_class3
       month: *vmin_vmax_trend_heat_wave_3days_frequency_class3
-    levels: 11
+    levels: 9
     ticks: linspace
     units: days
     divergent: True
@@ -624,7 +655,7 @@ plotting:  # ------------------------------------- Plotting --------------------
     limits:
       year: &vmin_vmax_mean_heat_wave_3days_frequency_class3
         vmin: 0
-        vmax: 10
+        vmax: 5
       season: *vmin_vmax_mean_heat_wave_3days_frequency_class3
       month: *vmin_vmax_mean_heat_wave_3days_frequency_class3
     levels: 11
@@ -636,11 +667,11 @@ plotting:  # ------------------------------------- Plotting --------------------
     label: ''
     limits:
       year: &vmin_vmax_trend_heat_wave_days_class3
-        vmin: -5
-        vmax: 5
+        vmin: -2
+        vmax: 2
       season: *vmin_vmax_trend_heat_wave_days_class3
       month: *vmin_vmax_trend_heat_wave_days_class3
-    levels: 11
+    levels: 9
     ticks: linspace
     units: days
     divergent: True
@@ -649,7 +680,7 @@ plotting:  # ------------------------------------- Plotting --------------------
     limits:
       year: &vmin_vmax_mean_heat_wave_days_class3
         vmin: 0
-        vmax: 10
+        vmax: 5
       season: *vmin_vmax_mean_heat_wave_days_class3
       month: *vmin_vmax_mean_heat_wave_days_class3
     levels: 11
@@ -674,7 +705,7 @@ plotting:  # ------------------------------------- Plotting --------------------
     limits:
       year: &vmin_vmax_mean_hot_days_gt_30
         vmin: 0
-        vmax: 15
+        vmax: 8
       season: *vmin_vmax_mean_hot_days_gt_30
       month: *vmin_vmax_mean_hot_days_gt_30
     levels: 16
@@ -698,11 +729,11 @@ plotting:  # ------------------------------------- Plotting --------------------
     label: ''
     limits:
       year: &vmin_vmax_trend_freeze_thaw_cycles
-        vmin: -20
-        vmax: 20
+        vmin: -8
+        vmax: 8
       season: *vmin_vmax_trend_freeze_thaw_cycles
       month: *vmin_vmax_trend_freeze_thaw_cycles
-    levels: 21
+    levels: 17
     ticks: linspace
     units: days
     divergent: True
@@ -747,7 +778,18 @@ plotting:  # ------------------------------------- Plotting --------------------
     ticks: linspace
     units: ˚C·days
     divergent: False
-  freezing_degree_days_lt_0_clim_std: *mean_and_std_freezing_degree_days_lt_0  # ToDo: Are these good values?
+  freezing_degree_days_lt_0_clim_std:
+    label: ''
+    limits:
+      year: &vmin_vmax_std_freezing_degree_days_lt_0
+        vmin: 0
+        vmax: 500
+      season: *vmin_vmax_std_freezing_degree_days_lt_0
+      month: *vmin_vmax_std_freezing_degree_days_lt_0
+    levels: 21
+    ticks: linspace
+    units: ˚C·days
+    divergent: False
   growing_degree_days_gt_4_clim_linregress:
     label: ''
     limits:
@@ -765,14 +807,26 @@ plotting:  # ------------------------------------- Plotting --------------------
     limits:
       year: &vmin_vmax_mean_growing_degree_days_gt_4
         vmin: 0
-        vmax: 4000
+        vmax: 3000
       season: *vmin_vmax_mean_growing_degree_days_gt_4  # FixMe: Can this be removed since there is no seasonal value?
       month: *vmin_vmax_mean_growing_degree_days_gt_4   # FixMe: Can this be removed since there is no monthly value?
-    levels: 21
+    levels: 16
     ticks: linspace
     units: GGD
     divergent: False
-  growing_degree_days_gt_4_clim_std: *mean_and_std_growing_degree_days_gt_4  # ToDo: Are these good values?
+  growing_degree_days_gt_4_clim_std:
+    label: ''
+    limits:
+      year: &vmin_vmax_std_growing_degree_days_gt_4
+        vmin: 0
+        vmax: 300
+      season: *vmin_vmax_std_growing_degree_days_gt_4  # FixMe: Can this be removed since there is no seasonal value?
+      month: *vmin_vmax_std_growing_degree_days_gt_4   # FixMe: Can this be removed since there is no monthly value?
+    levels: 16
+    ticks: linspace
+    units: GGD
+    divergent: False
+
 
 # ------------------------------------- Precipitation Plots -------------------------------------
   # mean
@@ -837,8 +891,8 @@ plotting:  # ------------------------------------- Plotting --------------------
     label: ''
     limits:
       year: &vmin_vmax_trend_pr
-        vmin: -2
-        vmax: 2
+        vmin: -1
+        vmax: 1
       season: *vmin_vmax_trend_pr
       month: *vmin_vmax_trend_pr
     levels: 9
@@ -852,8 +906,8 @@ plotting:  # ------------------------------------- Plotting --------------------
     label: ''
     limits:
       year: &vmin_vmax_trend_RxxpTOT   # ToDo: Are these good values? if yes, use this for all RxxpTOT
-        vmin: -1
-        vmax: 1
+        vmin: -0.5
+        vmax: .5
       season: *vmin_vmax_trend_RxxpTOT
       month: *vmin_vmax_trend_RxxpTOT
     levels: 9
@@ -866,7 +920,7 @@ plotting:  # ------------------------------------- Plotting --------------------
     limits:
       year: &vmin_vmax_mean_RxxpTOT
         vmin: 0
-        vmax: 1
+        vmax: .5
       season: *vmin_vmax_mean_RxxpTOT
       month: *vmin_vmax_mean_RxxpTOT
     levels: 11
@@ -882,43 +936,63 @@ plotting:  # ------------------------------------- Plotting --------------------
     label: ''
     limits:
       year: &vmin_vmax_trend_RXxday       # ToDo: Are these good values?
-        vmin: -20
-        vmax: 20
+        vmin: -12
+        vmax: 12
       season: *vmin_vmax_trend_RXxday
       month: *vmin_vmax_trend_RXxday
-    levels: 9
+    levels: 13
     ticks: linspace
     units: mm
     divergent: True
-  RX1day_clim_mean: &mean_and_std_RX1day
-      # agg_operation: mean
+  RX1day_clim_mean:
       label: ''
       limits:
         year: &vmin_vmax_mean_RX1day        # ToDo: Are these good values?
-          vmin: 20
-          vmax: 100
+          vmin: 0
+          vmax: 50
         season: *vmin_vmax_mean_RX1day
         month: *vmin_vmax_mean_RX1day
-      levels: 17
+      levels: 21
       ticks: linspace
       units: mm
       divergent: False
-  RX1day_clim_std: *mean_and_std_RX1day    # ToDo: Are these good values?
-  RX5day_clim_linregress: *trend_RXxday    # ToDo: Are these good values?
-  RX5day_clim_mean: &mean_and_std_RX5day
-    # agg_operation: mean
+  RX1day_clim_std:
     label: ''
     limits:
-      year: &vmin_vmax_mean_RX5day
-        vmin: 20
-        vmax: 100
-      season: *vmin_vmax_mean_RX5day
-      month: *vmin_vmax_mean_RX5day
-    levels: 17
+      year: &vmin_vmax_std_RX1day
+        vmin: 0
+        vmax: 20
+      season: *vmin_vmax_std_RX1day
+      month: *vmin_vmax_std_RX1day
+    levels: 21
     ticks: linspace
     units: mm
     divergent: False
-  RX5day_clim_std: *mean_and_std_RX5day
+  RX5day_clim_linregress: *trend_RXxday    # ToDo: Are these good values?
+  RX5day_clim_mean: &mean_and_std_RX5day
+    label: ''
+    limits:
+      year: &vmin_vmax_mean_RX5day
+        vmin: 0
+        vmax: 100
+      season: *vmin_vmax_mean_RX5day
+      month: *vmin_vmax_mean_RX5day
+    levels: 21
+    ticks: linspace
+    units: mm
+    divergent: False
+  RX5day_clim_std:
+    label: ''
+    limits:
+      year: &vmin_vmax_std_RX5day
+        vmin: 0
+        vmax: 40
+      season: *vmin_vmax_std_RX5day
+      month: *vmin_vmax_std_RX5day
+    levels: 21
+    ticks: linspace
+    units: mm
+    divergent: False
 
 
 

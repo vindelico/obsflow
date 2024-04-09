@@ -15,7 +15,7 @@ variables:
     cell_methods: 'time: n-th percentile'
 
 indicators:
-#-------------------------------- Mean ------------------------------------#
+#-------------------------------- Mean Temperature ------------------------------------#
   tg_mean_annual:
     base: tg_mean
     src_freq: null
@@ -106,7 +106,7 @@ indicators:
       var_name: tn_mean
     parameters:
       freq: MS
-# ---------------------------- Standard Deviation Temp Intra --------------------------------#
+# ---------------------------- Standard Deviation Temperature Intra --------------------------------#
   tg_std_annual:
     base: stats
 #    compute: select_resample_op
@@ -243,51 +243,51 @@ indicators:
       op: std
       freq: MS
 
-# ----------------------------- Extreme Temperatures ---------------------------------#
+# ----------------------------- Extreme Temperature Indicators ---------------------------------#
   days_above_0_annual:
-    base: tg_days_above
+    base: tn_days_above
     cf_attrs:
-      long_name: annual number of days with mean temperature above 0 ˚C
+      long_name: annual number of days with minimum temperature above 0 ˚C
       var_name: days_above_0
     parameters:
       thresh: 0 degC
       freq: YS
   days_above_0_seasonal:
-    base: tg_days_above
+    base: tn_days_above
     cf_attrs:
-      long_name: seasonal number of days with mean temperature above 0 ˚C
+      long_name: seasonal number of days with minimum temperature above 0 ˚C
       var_name: days_above_0
     parameters:
       thresh: 0 degC
       freq: QS-DEC
   days_above_0_monthly:
-    base: tg_days_above
+    base: tn_days_above
     cf_attrs:
-      long_name: monthly number of days with mean temperature above 0 ˚C
+      long_name: monthly number of days with minimum temperature above 0 ˚C
       var_name: days_above_0
     parameters:
       thresh: 0 degC
       freq: MS
   days_below_m25_annual:
-    base: tg_days_below
+    base: tn_days_below
     cf_attrs:
-      long_name: annual number of days with mean temperature below -25 ˚C
+      long_name: annual number of days with minimum temperature below -25 ˚C
       var_name: days_below_m25
     parameters:
       thresh: -25 degC
       freq: YS
   days_below_m25_seasonal:
-    base: tg_days_below
+    base: tn_days_below
     cf_attrs:
-      long_name: seasonal number of days with mean temperature below -25 ˚C
+      long_name: seasonal number of days with minimum temperature below -25 ˚C
       var_name: days_below_m25
     parameters:
       thresh: -25 degC
       freq: QS-DEC
   days_below_m25_monthly:
-    base: tg_days_below
+    base: tn_days_below
     cf_attrs:
-      long_name: monthly number of days with mean temperature below -25 ˚C
+      long_name: monthly number of days with minimum temperature below -25 ˚C
       var_name: days_below_m25
     parameters:
       thresh: -25 degC
@@ -454,7 +454,7 @@ indicators:
       op: std
       freq: MS
 
-# ----------------------------- Extreme Precipitation ---------------------------------#
+# ----------------------------- Extreme Precipitation Indicators ---------------------------------#
   RX1day_annual:
     base: max_n_day_precipitation_amount
     cf_attrs:
@@ -512,7 +512,7 @@ indicators:
     cf_attrs:
       long_name: Fraction of annual precipitation due to wet days with daily precipitation above the 95th percentile.
       var_name: R95pTOT
-      units: 1
+      units: '1'
     parameters:
       freq: YS
   R95pTOT_seasonal:
@@ -522,7 +522,7 @@ indicators:
     cf_attrs:
       long_name: Fraction of seasonal precipitation due to wet days with daily precipitation above the 95th percentile.
       var_name: R95pTOT
-      units: 1
+      units: '1'
     parameters:
       freq: QS-DEC
   R95pTOT_monthly:
@@ -532,7 +532,7 @@ indicators:
     cf_attrs:
       long_name: Fraction of monthly precipitation due to wet days with daily precipitation above the 95th percentile.
       var_name: R95pTOT
-      units: 1
+      units: '1'
     parameters:
       freq: MS
   R99pTOT_annual:
@@ -542,7 +542,7 @@ indicators:
     cf_attrs:
       long_name: Fraction of annual precipitation due to very wet days with daily precipitation above the 99th percentile.
       var_name: R99pTOT
-      units: 1
+      units: '1'
     parameters:
       freq: YS
   R99pTOT_seasonal:
@@ -552,7 +552,7 @@ indicators:
     cf_attrs:
       long_name: Fraction of seasonal precipitation due to very wet days with daily precipitation above the 99th percentile.
       var_name: R99pTOT
-      units: 1
+      units: '1'
     parameters:
       freq: QS-DEC
   R99pTOT_monthly:
@@ -562,7 +562,7 @@ indicators:
     cf_attrs:
       long_name: Fraction of monthly precipitation due to very wet days with daily precipitation above the 99th percentile.
       var_name: R99pTOT
-      units: 1
+      units: '1'
     parameters:
       freq: MS
 

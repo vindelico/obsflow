@@ -222,9 +222,7 @@ if __name__ == "__main__":
                     if not pcat.exists_in_cat(**cur):
                         # save to zarr
                         path_ind = f"{CONFIG['paths']['task']}".format(**cur)
-                        xs.save_to_zarr(
-                            ds_ind, path_ind, **CONFIG["indicators"]["save"]
-                        )
+                        xs.save_to_zarr(ds_ind, path_ind, **CONFIG["indicators"]["save"])
                         pcat.update_from_ds(ds=ds_ind, path=path_ind)
 
     # --- CLIMATOLOGIES ---
@@ -240,7 +238,7 @@ if __name__ == "__main__":
                 "processing_level": "climatology",
             }
 
-            #if key_input not in 'GovCan_AHCCD_CAN_station-pr.Quebec.indicators.MS':  # FixMe: remove this
+            # if key_input not in 'GovCan_AHCCD_CAN_station-pr.Quebec.indicators.MS':  # FixMe: remove this
             #    continue
 
             if not pcat.exists_in_cat(**cur):
@@ -370,244 +368,258 @@ if __name__ == "__main__":
                 # matplotlib.use('wxAgg')
                 # matplotlib.use("TkAgg")
                 # matplotlib.use("macosx")
-                matplotlib.use('Qt5Agg')
+                # matplotlib.use('Qt5Agg')
+                matplotlib.use('Agg')
 
                 fg.utils.set_mpl_style('ouranos')
                 projection = ccrs.LambertConformal()
                 freq = CONFIG['plotting'][ds_input.attrs['cat:xrfreq']]['xrfreq_name']
 
-                for horizon in ds_input.horizon.values:   #['1991-2018']:  # ds_input.horizon.values:  #['1981-2010']:  # FixMe: remove this
+                for horizon in ds_input.horizon.values:  # ['1991-2018']:  # ds_input.horizon.values:  #['1981-2010']:  # FixMe: remove this
                     for da_grid in ds_input.data_vars.values():
 
-                        # if any(n in da_grid.name for n in ['tg', 'tx', 'tn']):
-                        # if 'RDRS' not in key_input: continue  # FixMe: remove this
-                        # if 'pr' not in da_grid.name: continue  # FixMe: remove this
-                        # if 'tg_mean_clim_mean' not in da_grid.name: continue  # FixMe: remove this
-                        # if 'year' in freq: continue  # FixMe: remove this
-                        # if 'season' in freq: continue  # FixMe: remove this
-                        # if 'month' in freq: continue # FixMe: remove this
-
-                        # Wait! if we don't have that indicator in the config, let's configure it
-                        # logger.info(f"Coming up: {da_grid.name}.")
-                        # if da_grid.name not in CONFIG["plotting"]:
-                        #     warnings.warn(f"Variable {da_grid.name} not in CONFIG['plotting']!")
-                        #     continue
-                        # else:
-                        #     logger.info(f"Nope, I'm not plotting {da_grid.name} for {key_input} ({horizon}) this time!")
-                        #     continue
-
-                        # get a plot_id for labeling and file naming -------------------------------------------
-                        plot_id = (f"{CONFIG['plotting'][da_grid.name]['label']} "
-                                   f"{da_grid.attrs['long_name'].lower()} - "
-                                   f"{ds_input.attrs['source']} ({horizon})")
-                        # print(f"Raw ID: ..................... {da_grid.name} --- {plot_id}")
-
-                        # trim the plot_id ---------------------------------------------------------------------
-                        adj = {'year': 'annual', 'month': 'monthly', 'season': 'seasonal'}
-                        changes = {
-                            'interannual 30-year climatological': 'interannual',
-                            'intra 30-year climatological average of ': 'intra-',
-                            '30-year climatological average': f'{adj[freq]} climate average',
-                            '30-year climatological linregress': 'linear climate trend',
-                            'total standard deviation': 'climate standard deviation',
-                            '.': '',
-                        }
-                        for k, v in changes.items():
-                            plot_id = plot_id.replace(k, v).strip()
-                        logger.info(f"Variable: {da_grid.name} --- Plotting {plot_id}")
-                        # print(f'Trimmed ID: {da_grid.name} --- {plot_id}')
-
-                        # get the corresponding AHCCD observation data -----------------------------------------
                         try:
-                            da_station = pcat.search(
-                                source='AHCCD',
-                                processing_level='climatology',
-                                xrfreq=ds_input.attrs.get('cat:xrfreq'),
-                                variable=da_grid.name,
-                            ).to_dataset()[da_grid.name]
-                        except ValueError:
-                            da_station = None
+                            # if any(n in da_grid.name for n in ['tg', 'tx', 'tn']):
+                            # if 'RDRS' not in key_input: continue  # FixMe: remove this
+                            # if 'pr' not in da_grid.name: continue  # FixMe: remove this
+                            # if 'days_above_0_clim_linregress' not in da_grid.name: continue  # FixMe: remove this
+                            # if 'year' in freq: continue  # FixMe: remove this
+                            # if 'season' in freq: continue  # FixMe: remove this
+                            # if 'month' in freq: continue # FixMe: remove this
 
-                        if horizon not in da_station.horizon.values:
-                            da_station = None
+                            # Wait! if we don't have that indicator in the config, let's configure it
+                            # logger.info(f"Coming up: {da_grid.name}.")
+                            # if da_grid.name not in CONFIG["plotting"]:
+                            #     warnings.warn(f"Variable {da_grid.name} not in CONFIG['plotting']!")
+                            #     continue
+                            # else:
+                            #     logger.info(f"Nope, I'm not plotting {da_grid.name} for {key_input} ({horizon}) this time!")
+                            #     continue
 
-                        # selection and scaling of data ToDo: the scaling should be done in the clean-up step --
-                        sel_kwargs = {
-                            "horizon": horizon}  # | {freq: da_grid[freq].values} if freq not in 'year' else {}
+                            # get a plot_id for labeling and file naming -------------------------------------------
+                            plot_id = (f"{CONFIG['plotting'][da_grid.name]['label']} "
+                                       f"{da_grid.attrs['long_name'].lower()} - "
+                                       f"{ds_input.attrs['source']} ({horizon})")
+                            # print(f"Raw ID: ..................... {da_grid.name} --- {plot_id}")
 
-                        scale_factor = 1
-                        if 'linregress' in da_grid.name:
-                            sel_kwargs.setdefault('linreg_param', 'slope')
-                            scale_factor = 10
+                            # trim the plot_id ---------------------------------------------------------------------
+                            adj = {'year': 'annual', 'month': 'monthly', 'season': 'seasonal'}
+                            changes = {
+                                'interannual 30-year climatological': 'interannual',
+                                'intra 30-year climatological average of ': 'intra-',
+                                '30-year climatological average': f'{adj[freq]} climate average',
+                                '30-year climatological linregress': 'linear climate trend',
+                                'total standard deviation': 'climate standard deviation',
+                                '.': '',
+                                '˚c': '°C',
+                            }
+                            for k, v in changes.items():
+                                plot_id = plot_id.replace(k, v).strip()
+                            logger.info(f"Variable: {da_grid.name} --- Plotting {plot_id}")
+                            # print(f'Trimmed ID: {da_grid.name} --- {plot_id}')
 
-                        # figure arguments -
-                        fig_kwargs = CONFIG["plotting"][freq]["fig_kwargs"]
+                            # get the corresponding AHCCD observation data -----------------------------------------
+                            try:
+                                da_station = pcat.search(
+                                    source='AHCCD',
+                                    processing_level='climatology',
+                                    xrfreq=ds_input.attrs.get('cat:xrfreq'),
+                                    variable=da_grid.name,
+                                ).to_dataset(**tdd)[da_grid.name]
+                            except ValueError:
+                                da_station = None
 
-                        # levels and ticks -----------------------------------------------------------------------
-                        if 'linspace' in CONFIG["plotting"][da_grid.name]["ticks"]:
-                            levels = list(np.linspace(CONFIG["plotting"][da_grid.name]["limits"][freq]["vmin"],
-                                                      CONFIG["plotting"][da_grid.name]["limits"][freq]["vmax"],
-                                                      CONFIG["plotting"][da_grid.name]["levels"]))
-                            ticks = levels[0::2]
-                        else:
-                            levels = CONFIG["plotting"][da_grid.name]["levels"]
-                            ticks = CONFIG["plotting"][da_grid.name]["ticks"]
+                            if horizon not in da_station.horizon.values:
+                                da_station = None
 
-                        # print(f'Freq: {freq}\nLevels: {levels}\nTicks: {ticks}\n'
-                        #       f'{CONFIG["plotting"][da_grid.name]["limits"][freq]}')  # FixMe: remove this
+                            # selection and scaling of data ToDo: the scaling should be done in the clean-up step --
+                            sel_kwargs = {
+                                "horizon": horizon}  # | {freq: da_grid[freq].values} if freq not in 'year' else {}
 
-                        # plot kwargs ----------------------------------------------------------------------------
-                        plot_kwargs_grid = {
-                            **CONFIG["plotting"][freq]["plot_kwargs_grid"],
-                            **CONFIG["plotting"][da_grid.name]["limits"][freq],
-                        }
-                        plot_kwargs_grid = plot_kwargs_grid | {} if 'year' in freq else plot_kwargs_grid | {
-                            "col": freq,
-                            "col_wrap": CONFIG["plotting"][freq]["col_wrap"],
-                        }
-                        plot_kwargs_grid['cbar_kwargs'].setdefault('ticks', ticks)
-                        plot_kwargs_grid['cbar_kwargs'].setdefault('label', da_grid.attrs[
-                            'units'])  # We made sure station data has the same units as the grid data
+                            scale_factor = 1
+                            if 'linregress' in da_grid.name:
+                                sel_kwargs.setdefault('linreg_param', 'slope')
+                                scale_factor = 10
 
-                        # gridmap kwargs -------------------------------------------------------------------------
-                        gridmap_kwargs = {
-                            "projection": projection,
-                            "transform": ccrs.PlateCarree(),
-                            "divergent": CONFIG["plotting"][da_grid.name]["divergent"],
-                            "levels": levels,
-                            **CONFIG["plotting"]["gridmap_kwargs"],
-                        }
+                            # figure arguments -
+                            fig_kwargs = CONFIG["plotting"][freq]["fig_kwargs"]
 
-                        # let's get to work plotting -------------------------------------------------------------
-                        # do the facetgrid plot
-                        with xr.set_options(keep_attrs=True):
-                            fax = fg.gridmap(
-                                data=da_grid.sel(sel_kwargs) * scale_factor,
-                                plot_kw=plot_kwargs_grid,
-                                fig_kw=fig_kwargs,
-                                **gridmap_kwargs,
-                            )
+                            # levels and ticks -----------------------------------------------------------------------
+                            if 'linspace' in CONFIG["plotting"][da_grid.name]["ticks"]:
+                                levels = list(np.linspace(CONFIG["plotting"][da_grid.name]["limits"][freq]["vmin"],
+                                                          CONFIG["plotting"][da_grid.name]["limits"][freq]["vmax"],
+                                                          CONFIG["plotting"][da_grid.name]["levels"]))
+                                ticks = levels[0::2]
+                            else:
+                                levels = CONFIG["plotting"][da_grid.name]["levels"]
+                                ticks = CONFIG["plotting"][da_grid.name]["ticks"]
 
-                            # plt.show(block=False)
+                            # print(f'Freq: {freq}\nLevels: {levels}\nTicks: {ticks}\n'
+                            #       f'{CONFIG["plotting"][da_grid.name]["limits"][freq]}')  # FixMe: remove this
 
-                            # prepare kwargs for station data ToDo: Simplify this, too
-                            plot_kwargs_station = {
-                                                      k: plot_kwargs_grid[k]
-                                                      for k in ['x', 'y', 'vmin', 'vmax', 'xlim', 'ylim']
-                                                  } | {
-                                                      'edgecolors': '#6F6F6F',
-                                                      'linewidths': 0.5,
-                                                      **CONFIG["plotting"][freq]["plot_kwargs_station"],
-                                                      'add_colorbar': False,
-                                                      'label': 'AHCCD-Stations'
-                                                  }
-                            scattermap_kwargs = {k: gridmap_kwargs[k] for k in
-                                                 ['transform', 'divergent', 'levels', 'frame']}
-                            # iterate over facets to add hatching for trends and station data
-                            for ax, sel_kwarg in zip(
-                                    fax.axs.flat if isinstance(fax, xarray.plot.FacetGrid) else [fax],
-                                    [{}] if freq in 'year' else
-                                    [{freq: f} for f in da_grid[freq].values]):
-                                # fax.axs.flat if isinstance(fax, xarray.plot.FacetGrid) else [fax],
-                                # [{}] if freq in 'year' or da_station is None else
-                                # [{freq: f} for f in da_station[freq].values]):
-                                title = ax.get_title()
-                                # add significance hatching for reanalysis when plotting linear trends
-                                if 'linregress' in da_grid.name:
-                                    sel_sig_kwargs = (sel_kwargs | sel_kwarg).copy()
-                                    sel_sig_kwargs['linreg_param'] = 'pvalue'
-                                    sig_gridmap_kwargs = {k: v for k, v in gridmap_kwargs.items()
-                                                          if k in ['projection', 'transform', 'frame']}
-                                    plt.rcParams['hatch.linewidth'] = 0.3
-                                    plt.rcParams['hatch.color'] = '#6F6F6F'  # 'dimgray'
-                                    hatches = ['////']
-                                    ax = fg.hatchmap(
-                                        data=da_grid.sel(sel_sig_kwargs).where(da_grid.sel(sel_sig_kwargs) > 0.05),
-                                        ax=ax,
-                                        plot_kw={'hatches': hatches,
-                                                 'x': 'lon',
-                                                 'y': 'lat',
-                                                 'xlim': plot_kwargs_grid['xlim'],
-                                                 'ylim': plot_kwargs_grid['ylim'],
-                                                 },
-                                        **sig_gridmap_kwargs,
-                                        legend_kw=False,
-                                    )
-                                # add station data
-                                if da_station is not None:
-                                    data = da_station.sel(sel_kwargs | sel_kwarg) * scale_factor
-                                    # data = data.sel({data.dims[0]: ~np.isnan(data.squeeze().values)})  # take out nans # ToDo: The squeeze can be removed when data were regenergated without the year dimension
-                                    if 'linregress' not in da_station.name:
-                                        ax = fg.scattermap(
-                                            # data=xr.Dataset({da_station.name: da_station.sel(sel_kwargs) * scale_factor}),
-                                            data=data,
-                                            ax=ax,
-                                            plot_kw=plot_kwargs_station,
-                                            **scattermap_kwargs,
-                                            # cmap=[c.cmap for c in ax.get_children() if hasattr(c, 'cmap')][0],
-                                        )
-                                    else:
-                                        data_non_sig = data.where(da_station.sel(sel_sig_kwargs) > 0.05)
-                                        plot_kwargs_station['marker'] = 'X'
-                                        plot_kwargs_station['label'] = 'AHCCD-Stations\n(non-significant)'
-                                        ax = fg.scattermap(
-                                            data=data_non_sig,
-                                            ax=ax,
-                                            plot_kw=plot_kwargs_station,
-                                            **scattermap_kwargs,
-                                        )
-                                        data_sig = data.where(da_station.sel(sel_sig_kwargs) <= 0.05)
-                                        plot_kwargs_station['marker'] = 'o'
-                                        plot_kwargs_station['label'] = 'AHCCD-Stations\n(significant)'
-                                        ax = fg.scattermap(
-                                            data=data_sig,
-                                            ax=ax,
-                                            plot_kw=plot_kwargs_station,
-                                            **scattermap_kwargs,
-                                        )
-                                # else:
-                                #     ax = fax.axs.flat[-1] if isinstance(fax, xarray.plot.FacetGrid) else fax
-                                ax.set_title('')
-                                facet_label = title if 'year' not in freq else 'ANN'
-                                ax.text(x=0.8, y=0.93, s=facet_label, fontsize=14, fontweight='bold',
-                                        transform=ax.transAxes)
-                                ax.set_extent(
-                                    plot_kwargs_station['xlim'] +
-                                    plot_kwargs_station['ylim'],
-                                    crs=ccrs.PlateCarree()
+                            # plot kwargs ----------------------------------------------------------------------------
+                            plot_kwargs_grid = {
+                                **CONFIG["plotting"][freq]["plot_kwargs_grid"],
+                                **CONFIG["plotting"][da_grid.name]["limits"][freq],
+                            }
+                            plot_kwargs_grid = plot_kwargs_grid | {} if 'year' in freq else plot_kwargs_grid | {
+                                "col": freq,
+                                "col_wrap": CONFIG["plotting"][freq]["col_wrap"],
+                            }
+                            plot_kwargs_grid['cbar_kwargs'].setdefault('ticks', ticks)
+                            plot_kwargs_grid['cbar_kwargs'].setdefault('label', da_grid.attrs[
+                                'units'])  # We made sure station data has the same units as the grid data
+
+                            # gridmap kwargs -------------------------------------------------------------------------
+                            gridmap_kwargs = {
+                                "projection": projection,
+                                "transform": ccrs.PlateCarree(),
+                                "divergent": CONFIG["plotting"][da_grid.name]["divergent"],
+                                "levels": levels,
+                                **CONFIG["plotting"]["gridmap_kwargs"],
+                            }
+
+                            # let's get to work plotting -------------------------------------------------------------
+                            # do the facetgrid plot
+                            with xr.set_options(keep_attrs=True):
+                                fax = fg.gridmap(
+                                    data=da_grid.sel(sel_kwargs) * scale_factor,
+                                    plot_kw=plot_kwargs_grid,
+                                    fig_kw=fig_kwargs,
+                                    **gridmap_kwargs,
                                 )
 
-                            fig = fax.fig if isinstance(fax, xarray.plot.FacetGrid) else fax.axes.figure
-                            handles, labels = ax.get_legend_handles_labels()
-                            if 'linregress' in da_grid.name:
-                                handles.append(matplotlib.patches.Patch(hatch=hatches[0], fill=False))
-                                labels.append('non-significant')
-                            if handles:
-                                ax.legend(handles=handles, labels=labels, **CONFIG["plotting"][freq]["legend_kwargs"])
-                            fig.subplots_adjust(**CONFIG["plotting"][freq]["subplots_adjust_kwargs"])
-                            title = '\n'.join(wrap(plot_id[:1].upper() + plot_id[1:],
-                                                   CONFIG["plotting"][freq]["suptitle_wrap"]))
-                            fig.suptitle(title, **CONFIG["plotting"][freq]["suptitle_kwargs"])
-                        # plt.show(block=False)
+                                # plt.show(block=False)
 
-                        # prepare file_name, directory and save -------------------------------------------------
-                        changes = {'standard deviation': 'std', '- ': '', '(': '', ')': '', ' ': '_', }
-                        file_name = plot_id
-                        for k, v in changes.items():
-                            file_name = file_name.replace(k, v)
-                        cur = {
-                            "processing_level": "test_figures",
-                            "horizon": horizon,
-                            "file_name": file_name,
-                        }
-                        out_file = Path(f"{CONFIG['paths']['figures']}".format(**cur))
-                        if not out_file.parent.exists():
-                            out_file.parent.mkdir(parents=True, exist_ok=True)
+                                # prepare kwargs for station data ToDo: Simplify this, too
+                                plot_kwargs_station = {
+                                                          k: plot_kwargs_grid[k]
+                                                          for k in ['x', 'y', 'vmin', 'vmax', 'xlim', 'ylim']
+                                                      } | {
+                                                          'edgecolors': '#6F6F6F',
+                                                          'linewidths': 0.5,
+                                                          **CONFIG["plotting"][freq]["plot_kwargs_station"],
+                                                          'add_colorbar': False,
+                                                          'label': 'AHCCD-Stations'
+                                                      }
+                                scattermap_kwargs = {k: gridmap_kwargs[k] for k in
+                                                     ['transform', 'divergent', 'levels', 'frame']}
+                                # iterate over facets to add hatching for trends and station data
+                                for ax, sel_kwarg in zip(
+                                        fax.axs.flat if isinstance(fax, xarray.plot.FacetGrid) else [fax],
+                                        [{}] if freq in 'year' else
+                                        [{freq: f} for f in da_grid[freq].values]):
+                                    # fax.axs.flat if isinstance(fax, xarray.plot.FacetGrid) else [fax],
+                                    # [{}] if freq in 'year' or da_station is None else
+                                    # [{freq: f} for f in da_station[freq].values]):
+                                    title = ax.get_title()
+                                    # add significance hatching for reanalysis when plotting linear trends
+                                    if 'linregress' in da_grid.name:
+                                        sel_sig_kwargs = (sel_kwargs | sel_kwarg).copy()
+                                        sel_sig_kwargs['linreg_param'] = 'pvalue'
+                                        sig_gridmap_kwargs = {k: v for k, v in gridmap_kwargs.items()
+                                                              if k in ['projection', 'transform', 'frame']}
+                                        plt.rcParams['hatch.linewidth'] = 0.3
+                                        plt.rcParams['hatch.color'] = '#6F6F6F'  # 'dimgray'
+                                        hatches = ['////']
+                                        ax = fg.hatchmap(
+                                            data=da_grid.sel(sel_sig_kwargs).where(da_grid.sel(sel_sig_kwargs) > 0.05),
+                                            ax=ax,
+                                            plot_kw={'hatches': hatches,
+                                                     'x': 'lon',
+                                                     'y': 'lat',
+                                                     'xlim': plot_kwargs_grid['xlim'],
+                                                     'ylim': plot_kwargs_grid['ylim'],
+                                                     },
+                                            **sig_gridmap_kwargs,
+                                            legend_kw=False,
+                                        )
+                                    # add station data
+                                    if da_station is not None:
+                                        data = da_station.sel(sel_kwargs | sel_kwarg) * scale_factor
+                                        # data = data.sel({data.dims[0]: ~np.isnan(data.squeeze().values)})  # take out nans # ToDo: The squeeze can be removed when data were regenergated without the year dimension
+                                        if 'linregress' not in da_station.name:
+                                            ax = fg.scattermap(
+                                                # data=xr.Dataset({da_station.name: da_station.sel(sel_kwargs) * scale_factor}),
+                                                data=data,
+                                                ax=ax,
+                                                plot_kw=plot_kwargs_station,
+                                                **scattermap_kwargs,
+                                                # cmap=[c.cmap for c in ax.get_children() if hasattr(c, 'cmap')][0],
+                                            )
+                                        else:
+                                            data_non_sig = data.where(da_station.sel(sel_sig_kwargs) > 0.05)
+                                            plot_kwargs_station['marker'] = 'X'
+                                            plot_kwargs_station['label'] = 'AHCCD-Stations\n(non-significant)'
+                                            ax = fg.scattermap(
+                                                data=data_non_sig,
+                                                ax=ax,
+                                                plot_kw=plot_kwargs_station,
+                                                **scattermap_kwargs,
+                                            )
+                                            data_sig = data.where(da_station.sel(sel_sig_kwargs) <= 0.05)
+                                            plot_kwargs_station['marker'] = 'o'
+                                            plot_kwargs_station['label'] = 'AHCCD-Stations\n(significant)'
+                                            ax = fg.scattermap(
+                                                data=data_sig,
+                                                ax=ax,
+                                                plot_kw=plot_kwargs_station,
+                                                **scattermap_kwargs,
+                                            )
+                                    # else:
+                                    #     ax = fax.axs.flat[-1] if isinstance(fax, xarray.plot.FacetGrid) else fax
+                                    ax.set_title('')
+                                    facet_label = title if 'year' not in freq else 'ANN'
+                                    ax.text(x=0.8, y=0.93, s=facet_label, fontsize=14, fontweight='bold',
+                                            transform=ax.transAxes)
+                                    ax.set_extent(
+                                        plot_kwargs_station['xlim'] +
+                                        plot_kwargs_station['ylim'],
+                                        crs=ccrs.PlateCarree()
+                                    )
 
-                        # save to png
-                        logger.info(f"Saving {out_file}.png ...")
-                        fig.savefig(out_file, **CONFIG["plotting"]["savefig_kwargs"])
-                        plt.close(fig)
+                                fig = fax.fig if isinstance(fax, xarray.plot.FacetGrid) else fax.axes.figure
+                                handles, labels = ax.get_legend_handles_labels()
+                                if 'linregress' in da_grid.name:
+                                    handles.append(matplotlib.patches.Patch(hatch=hatches[0], fill=False))
+                                    labels.append('non-significant')
+                                if handles:
+                                    ax.legend(handles=handles, labels=labels, **CONFIG["plotting"][freq]["legend_kwargs"])
+                                fig.subplots_adjust(**CONFIG["plotting"][freq]["subplots_adjust_kwargs"])
+                                title = '\n'.join(wrap(plot_id[:1].upper() + plot_id[1:], len(plot_id) / 2))
+                                # CONFIG["plotting"][freq]["suptitle_wrap"]))
+                                fig.suptitle(title, **CONFIG["plotting"][freq]["suptitle_kwargs"])
+                            # plt.show(block=False)
+
+                            # prepare file_name, directory and save -------------------------------------------------
+                            changes = {
+                                'standard deviation': 'std',
+                                '- ': '',
+                                '(': '',
+                                ')': '',
+                                ' ': '_',
+                                '>': 'gt',
+                                '°C': 'degC',
+                            }
+                            file_name = plot_id
+                            for k, v in changes.items():
+                                file_name = file_name.replace(k, v)
+                            cur = {
+                                "processing_level": "test_figures",
+                                "horizon": horizon,
+                                "file_name": file_name,
+                            }
+                            out_file = Path(f"{CONFIG['paths']['figures']}".format(**cur))
+                            if not out_file.parent.exists():
+                                out_file.parent.mkdir(parents=True, exist_ok=True)
+
+                            # save to png
+                            logger.info(f"Saving {out_file}.png ...")
+                            fig.savefig(out_file, **CONFIG["plotting"]["savefig_kwargs"])
+                            plt.close(fig)
+                        except Exception as e:
+                            logger.error(f"Error plotting {da_grid.name} for {key_input} ({horizon}): {e}", exc_info=True)
+                            continue
 
     # --- ENSEMBLES ---
     if "ensembles" in CONFIG["tasks"]:
