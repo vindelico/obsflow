@@ -14,9 +14,9 @@ tasks:
   #- extract # Extract station data, (gridded observation data), and reanalysis data.
   #- regrid # Regrid the simulation onto a common grid (ERA5-Land).
   #- cleanup # Handle different units in datasets.
-  - indicators # Compute xclim indicators on the datasets.
+  #- indicators # Compute xclim indicators on the datasets.
   - climatologies # Compute climatological operations for the indicators (mean, std, trend).
-  #- plotting # Make plots of results from climatological operations for annual, seasonal, and monthly data.
+  - plotting # Make plots of results from climatological operations for annual, seasonal, and monthly data.
   #- "ensembles" # Compute/compare different datasets and assess uncertainties in historical data (ToDo)
 
 # Task Arguments
@@ -280,7 +280,7 @@ indicators:  # ------------------------------------- Indicators ----------------
 
 aggregate:  # ------------------------------------- Climatological Operations -------------------------------------
   dask:
-    n_workers: 12
+    n_workers: 16
     threads_per_worker: 4
     memory_limit: "15GB"
   periods:
@@ -300,11 +300,6 @@ aggregate:  # ------------------------------------- Climatological Operations --
   climatological_mean: # automatically passed to the function
     op: mean
     to_level: climatology
-  vars_for_climatological_std:
-    - pr_std
-    - tg_std
-    - tn_std
-    - tx_std
   vars_for_interannual_std: &indicators
     - R95pTOT
     - R99pTOT
@@ -314,17 +309,36 @@ aggregate:  # ------------------------------------- Climatological Operations --
     - days_below_m25
     - freeze_thaw_cycles
     - freezing_degree_days_lt_0
-    - growing_degree_days_gt_4
-    - heat_wave_3days_frequency_class3
-    - heat_wave_days_class3
+    - thawing_degree_days_gt_0
+    - no_thaw_days
+    #    - frost_free_season_start
+    #    - frost_free_season_end
+    #    - frost_free_season_length
+    - growing_season_length
+    - growing_degree_days_gt_5
+    - heating_degree_days_lt_15
+    - cooling_degree_days_gt_18
+    - heat_spell_total_length_class1
+    - heat_spell_frequency_class1
+    - cold_spell_total_length_class1
+    - cold_spell_frequency_class1
     - hot_days_gt_30
     - hot_days_gt_32
     - pr_mean
     - tg_mean
     - tn_mean
+    - tn_min
     - tropical_nights_gt_20
     - tropical_nights_gt_22
     - tx_mean
+    - tx_max
+    - dtr
+    - dtrmax
+  vars_for_climatological_std:
+    - pr_std
+    - tg_std
+    - tn_std
+    - tx_std
   climatological_std: # automatically passed to the function
     op: std
     to_level: climatology
@@ -377,7 +391,7 @@ plotting:  # ------------------------------------- Plotting --------------------
         - 45
         - 61
     plot_kwargs_station:
-      s: 25
+      s: 45
     col_wrap:
     suptitle_wrap: 50
     suptitle_kwargs:
@@ -554,10 +568,97 @@ plotting:  # ------------------------------------- Plotting --------------------
     divergent: True
   tn_mean_clim_linregress: *trend
   tx_mean_clim_linregress: *trend
+  # -------------------------------------------- DTR -----------------------------------------------
+  dtr_clim_mean:
+    agg_operation: mean
+    label: ''
+    limits:
+      year:
+        vmin: 5
+        vmax: 15
+      season:
+        vmin: 5
+        vmax: 15
+      month:
+        vmin: 5
+        vmax: 15
+    levels: 11
+    ticks: linspace
+    units: K
+    divergent: False
+  dtr_clim_std:
+    agg_operation: std
+    label: ''
+    limits:
+      year:
+        vmin: 0
+        vmax: 2
+      season:
+        vmin: 0
+        vmax: 2
+      month:
+        vmin: 0
+        vmax: 2
+    levels: 9
+    ticks: linspace
+    units: K
+    divergent: False
+  dtr_clim_linregress: &dtr_trend
+    agg_operation: linregress
+    label: ''
+    limits:
+      year:
+        vmin: -0.5
+        vmax: 0.5
+      season:
+        vmin: -0.5
+        vmax: 0.5
+      month:
+        vmin: -0.5
+        vmax: 0.5
+    levels: 11
+    ticks: linspace
+    units: K
+    divergent:  True
+  dtrmax_clim_mean:
+    agg_operation: mean
+    label: ''
+    limits:
+      year:
+        vmin: 5
+        vmax: 25
+      season:
+        vmin: 5
+        vmax: 25
+      month:
+        vmin: 5
+        vmax: 25
+    levels: 21
+    ticks: linspace
+    units: K
+    divergent: False
+  dtrmax_clim_std:
+    agg_operation: std
+    label: ''
+    limits:
+      year:
+        vmin: 0
+        vmax: 5
+      season:
+        vmin: 0
+        vmax: 5
+      month:
+        vmin: 0
+        vmax: 5
+    levels: 11
+    ticks: linspace
+    units: K
+    divergent: False
+  dtrmax_clim_linregress: *dtr_trend
+
 
   # ------------------------------- Extreme Temperature Indicator Plots -------------------------------------
   days_above_0_clim_linregress: &trend_days_above_0
-    # agg_operation: linregress
     label: ''
     limits:
       year: &vmin_vmax_trend_days_above_0
@@ -570,7 +671,6 @@ plotting:  # ------------------------------------- Plotting --------------------
     units: days
     divergent: True
   days_above_0_clim_mean: &mean_and_std_days_above_0
-    # agg_operation: mean
     label: ''
     limits:
       year:
@@ -794,13 +894,13 @@ plotting:  # ------------------------------------- Plotting --------------------
     label: ''
     limits:
       year: &vmin_vmax_trend_growing_degree_days_gt_4
-        vmin: -1000
-        vmax: 1000
+        vmin: -100
+        vmax: 100
       season: *vmin_vmax_trend_growing_degree_days_gt_4   # FixMe: Can this be removed since there is no seasonal value?
       month: *vmin_vmax_trend_growing_degree_days_gt_4
     levels: 21
     ticks: linspace
-    units: GGD
+    units: GDD
     divergent: True
   growing_degree_days_gt_4_clim_mean: &mean_and_std_growing_degree_days_gt_4
     label: ''
@@ -810,21 +910,21 @@ plotting:  # ------------------------------------- Plotting --------------------
         vmax: 3000
       season: *vmin_vmax_mean_growing_degree_days_gt_4  # FixMe: Can this be removed since there is no seasonal value?
       month: *vmin_vmax_mean_growing_degree_days_gt_4   # FixMe: Can this be removed since there is no monthly value?
-    levels: 16
+    levels: 17
     ticks: linspace
-    units: GGD
+    units: GDD
     divergent: False
   growing_degree_days_gt_4_clim_std:
     label: ''
     limits:
       year: &vmin_vmax_std_growing_degree_days_gt_4
         vmin: 0
-        vmax: 300
+        vmax: 240
       season: *vmin_vmax_std_growing_degree_days_gt_4  # FixMe: Can this be removed since there is no seasonal value?
       month: *vmin_vmax_std_growing_degree_days_gt_4   # FixMe: Can this be removed since there is no monthly value?
-    levels: 16
+    levels: 13
     ticks: linspace
-    units: GGD
+    units: GDD
     divergent: False
 
 
@@ -902,20 +1002,18 @@ plotting:  # ------------------------------------- Plotting --------------------
 
 # -------------------------------- Extreme Precipitation Indicator Plots -------------------------------------
   R95pTOT_clim_linregress: &trend_RxxpTOT
-    # agg_operation: linregress   # FixMe do we need this?
     label: ''
     limits:
       year: &vmin_vmax_trend_RxxpTOT   # ToDo: Are these good values? if yes, use this for all RxxpTOT
-        vmin: -0.5
-        vmax: .5
+        vmin: -0.12
+        vmax: .12
       season: *vmin_vmax_trend_RxxpTOT
       month: *vmin_vmax_trend_RxxpTOT
-    levels: 9
+    levels: 13
     ticks: linspace
     units: 1
     divergent: True
   R95pTOT_clim_mean: &mean_and_std_RxxpTOT
-    # agg_operation: mean
     label: ''
     limits:
       year: &vmin_vmax_mean_RxxpTOT
@@ -932,12 +1030,11 @@ plotting:  # ------------------------------------- Plotting --------------------
   R99pTOT_clim_mean: *mean_and_std_RxxpTOT
   R99pTOT_clim_std: *mean_and_std_RxxpTOT  # ToDo: Are these good values?
   RX1day_clim_linregress: &trend_RXxday
-    # agg_operation: linregress
     label: ''
     limits:
       year: &vmin_vmax_trend_RXxday       # ToDo: Are these good values?
-        vmin: -12
-        vmax: 12
+        vmin: -6
+        vmax: 6
       season: *vmin_vmax_trend_RXxday
       month: *vmin_vmax_trend_RXxday
     levels: 13
@@ -968,7 +1065,18 @@ plotting:  # ------------------------------------- Plotting --------------------
     ticks: linspace
     units: mm
     divergent: False
-  RX5day_clim_linregress: *trend_RXxday    # ToDo: Are these good values?
+  RX5day_clim_linregress:
+    label: ''
+    limits:
+      year: &vmin_vmax_trend_RX5day
+        vmin: -10
+        vmax: 10
+      season: *vmin_vmax_trend_RX5day
+      month: *vmin_vmax_trend_RX5day
+    levels: 21
+    ticks: linspace
+    units: mm
+    divergent: True
   RX5day_clim_mean: &mean_and_std_RX5day
     label: ''
     limits:

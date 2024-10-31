@@ -189,7 +189,7 @@ if __name__ == "__main__":
         dict_input = pcat.search(**CONFIG["indicators"]["inputs"]).to_dataset_dict(
             **tdd
         )
-        for key_input, ds_input in dict_input.items():
+        for key_input, ds_input in sorted(dict_input.items()):
             with (
                 Client(**CONFIG["indicators"]["dask"], **daskkws),
                 xs.measure_time(name=f"indicators {key_input}", logger=logger)
@@ -292,7 +292,7 @@ if __name__ == "__main__":
                                                    for name in CONFIG["aggregate"]["vars_for_climatological_std"]
                                                    if name in ds_input.data_vars]):
                                     # pick the interannual standard deviation of the variable
-                                    ds_std_varname = [n for n in ds_std.data_vars if v_type in n and 'std' in n]
+                                    ds_std_varname = [n for n in ds_std.data_vars if f"{v_type}_mean" in n and 'std' in n]
                                     if len(ds_std_varname) == 1:
                                         ds_std_varname = ds_std_varname[0]
                                     else:
@@ -301,7 +301,7 @@ if __name__ == "__main__":
                                             f"'{v_type}' and 'std' in {ds_std_varname}"
                                         )
                                     # pick the mean of intra-annual/monthly/seasonal standard deviation of the variable
-                                    ds_mean_varname = [n for n in ds_mean.data_vars if v_type in n and 'std' in n]
+                                    ds_mean_varname = [n for n in ds_mean.data_vars if f"{v_type}_std" in n]
                                     if len(ds_mean_varname) == 1:
                                         ds_mean_varname = ds_mean_varname[0]
                                     else:
@@ -356,7 +356,7 @@ if __name__ == "__main__":
             if 'AHCCD' in key_input:  # currently AHCCD data are only plotted on top of reanalysis data
                 continue
             with (Client(**CONFIG["plotting"]["dask"], **daskkws),
-                  xs.measure_time(name=f"plotting {key_input}", logger=logger)):
+                    xs.measure_time(name=f"plotting {key_input}", logger=logger)):
 
                 import cartopy.crs as ccrs
                 import matplotlib.pyplot as plt
@@ -368,8 +368,8 @@ if __name__ == "__main__":
                 # matplotlib.use('wxAgg')
                 # matplotlib.use("TkAgg")
                 # matplotlib.use("macosx")
-                # matplotlib.use('Qt5Agg')
-                matplotlib.use('Agg')
+                matplotlib.use('Qt5Agg')
+                # matplotlib.use('Agg')
 
                 fg.utils.set_mpl_style('ouranos')
                 projection = ccrs.LambertConformal()
@@ -379,22 +379,24 @@ if __name__ == "__main__":
                     for da_grid in ds_input.data_vars.values():
 
                         try:
+                            # Filter specific variables/indicators/periods
+                            # if 'dtr' not in da_grid.name: continue  # FixMe: remove this
+                            # if '1981-2010' not in horizon: continue  # FixMe: remove this
+                            # if 'tx_mean_clim_linregress' not in da_grid.name: continue  # FixMe: remove this
                             # if any(n in da_grid.name for n in ['tg', 'tx', 'tn']):
                             # if 'RDRS' not in key_input: continue  # FixMe: remove this
-                            # if 'pr' not in da_grid.name: continue  # FixMe: remove this
-                            # if 'days_above_0_clim_linregress' not in da_grid.name: continue  # FixMe: remove this
                             # if 'year' in freq: continue  # FixMe: remove this
-                            # if 'season' in freq: continue  # FixMe: remove this
-                            # if 'month' in freq: continue # FixMe: remove this
+                            #if 'season' in freq: continue  # FixMe: remove this
+                            #if 'month' in freq: continue  # FixMe: remove this
 
                             # Wait! if we don't have that indicator in the config, let's configure it
-                            # logger.info(f"Coming up: {da_grid.name}.")
-                            # if da_grid.name not in CONFIG["plotting"]:
-                            #     warnings.warn(f"Variable {da_grid.name} not in CONFIG['plotting']!")
-                            #     continue
-                            # else:
-                            #     logger.info(f"Nope, I'm not plotting {da_grid.name} for {key_input} ({horizon}) this time!")
-                            #     continue
+                            logger.info(f"Coming up: {da_grid.name}.")
+                            if da_grid.name not in CONFIG["plotting"]:
+                                warnings.warn(f"Variable {da_grid.name} not in CONFIG['plotting']!")
+                                continue
+                            else:
+                                logger.info(f"Nope, I'm not plotting {da_grid.name} for {key_input} ({horizon}) this time!")
+                                continue
 
                             # get a plot_id for labeling and file naming -------------------------------------------
                             plot_id = (f"{CONFIG['plotting'][da_grid.name]['label']} "
@@ -415,7 +417,7 @@ if __name__ == "__main__":
                             }
                             for k, v in changes.items():
                                 plot_id = plot_id.replace(k, v).strip()
-                            logger.info(f"Variable: {da_grid.name} --- Plotting {plot_id}")
+                            #logger.info(f"Variable: {da_grid.name} --- Plotting {plot_id}") # ToDo: reactivate!
                             # print(f'Trimmed ID: {da_grid.name} --- {plot_id}')
 
                             # get the corresponding AHCCD observation data -----------------------------------------
@@ -467,8 +469,19 @@ if __name__ == "__main__":
                                 "col_wrap": CONFIG["plotting"][freq]["col_wrap"],
                             }
                             plot_kwargs_grid['cbar_kwargs'].setdefault('ticks', ticks)
-                            plot_kwargs_grid['cbar_kwargs'].setdefault('label', da_grid.attrs[
-                                'units'])  # We made sure station data has the same units as the grid data
+                            # cbar_label = da_grid.attrs['units'] if (
+                            #         'linregress' not in da_grid.name) else da_grid.attrs['units'] + ' per decade'
+                            # cbar_label = da_grid.attrs['units'] if (
+                            #         'linregress' not in da_grid.name and
+                            #         'growing' in da_grid.name) else 'GDD per decade'
+                            # @ToDo: cbar_label could be in the config file!
+                            # We made sure station data has the same units as the grid data
+                            cbar_label = da_grid.attrs['units']
+                            cbar_label = 'GGD' if 'growing' in da_grid.name else cbar_label
+                            cbar_label = cbar_label + ' per decade' if 'linregress' in da_grid.name else cbar_label
+                            plot_kwargs_grid['cbar_kwargs'].setdefault('label', cbar_label)
+                            # print(f"Raw ID: ..................... {da_grid.name} --- {plot_id} --- cbar_label: {cbar_label}")
+                            # continue
 
                             # gridmap kwargs -------------------------------------------------------------------------
                             gridmap_kwargs = {
@@ -496,7 +509,9 @@ if __name__ == "__main__":
                                                           k: plot_kwargs_grid[k]
                                                           for k in ['x', 'y', 'vmin', 'vmax', 'xlim', 'ylim']
                                                       } | {
-                                                          'edgecolors': '#6F6F6F',
+                                                          'edgecolors': '#FFF6FF',
+                                                          # pale pink, '#F8F8E7' bright yellow,  # '#6F6F6F' grey,
+                                                          'marker': 'o',
                                                           'linewidths': 0.5,
                                                           **CONFIG["plotting"][freq]["plot_kwargs_station"],
                                                           'add_colorbar': False,
@@ -509,11 +524,9 @@ if __name__ == "__main__":
                                         fax.axs.flat if isinstance(fax, xarray.plot.FacetGrid) else [fax],
                                         [{}] if freq in 'year' else
                                         [{freq: f} for f in da_grid[freq].values]):
-                                    # fax.axs.flat if isinstance(fax, xarray.plot.FacetGrid) else [fax],
-                                    # [{}] if freq in 'year' or da_station is None else
-                                    # [{freq: f} for f in da_station[freq].values]):
                                     title = ax.get_title()
                                     # add significance hatching for reanalysis when plotting linear trends
+                                    legend_elements = []
                                     if 'linregress' in da_grid.name:
                                         sel_sig_kwargs = (sel_kwargs | sel_kwarg).copy()
                                         sel_sig_kwargs['linreg_param'] = 'pvalue'
@@ -534,40 +547,73 @@ if __name__ == "__main__":
                                             **sig_gridmap_kwargs,
                                             legend_kw=False,
                                         )
+                                        legend_elements.append(
+                                            matplotlib.patches.Patch(hatch=hatches[0],
+                                                                     color='#333333',
+                                                                     fill=False,
+                                                                     label='non-significant'
+                                                                     )
+                                        )
                                     # add station data
                                     if da_station is not None:
                                         data = da_station.sel(sel_kwargs | sel_kwarg) * scale_factor
-                                        # data = data.sel({data.dims[0]: ~np.isnan(data.squeeze().values)})  # take out nans # ToDo: The squeeze can be removed when data were regenergated without the year dimension
                                         if 'linregress' not in da_station.name:
+                                            plot_kwargs_station['marker'] = 'o'
+                                            plot_kwargs_station['label'] = 'AHCCD-Stations'
                                             ax = fg.scattermap(
-                                                # data=xr.Dataset({da_station.name: da_station.sel(sel_kwargs) * scale_factor}),
                                                 data=data,
                                                 ax=ax,
                                                 plot_kw=plot_kwargs_station,
                                                 **scattermap_kwargs,
                                                 # cmap=[c.cmap for c in ax.get_children() if hasattr(c, 'cmap')][0],
                                             )
+                                            legend_elements.append(
+                                                matplotlib.lines.Line2D([0], [0],
+                                                                        linestyle='none',
+                                                                        marker=plot_kwargs_station['marker'],
+                                                                        markerfacecolor='none',
+                                                                        markeredgecolor='#333333',
+                                                                        label=plot_kwargs_station['label']),
+                                            )
                                         else:
-                                            data_non_sig = data.where(da_station.sel(sel_sig_kwargs) > 0.05)
+                                            data_non_sig = data.where(da_station.sel(sel_sig_kwargs) > 0.05).dropna(
+                                                'station')
                                             plot_kwargs_station['marker'] = 'X'
                                             plot_kwargs_station['label'] = 'AHCCD-Stations\n(non-significant)'
-                                            ax = fg.scattermap(
-                                                data=data_non_sig,
-                                                ax=ax,
-                                                plot_kw=plot_kwargs_station,
-                                                **scattermap_kwargs,
+                                            if data_non_sig.size > 0:
+                                                ax = fg.scattermap(
+                                                    data=data_non_sig,
+                                                    ax=ax,
+                                                    plot_kw=plot_kwargs_station,
+                                                    **scattermap_kwargs,
+                                                )
+                                            legend_elements.append(
+                                                matplotlib.lines.Line2D([0], [0],
+                                                                        linestyle='none',
+                                                                        marker=plot_kwargs_station['marker'],
+                                                                        markerfacecolor='none',
+                                                                        markeredgecolor='#333333',
+                                                                        label=plot_kwargs_station['label'])
                                             )
-                                            data_sig = data.where(da_station.sel(sel_sig_kwargs) <= 0.05)
+                                            data_sig = data.where(da_station.sel(sel_sig_kwargs) <= 0.05).dropna(
+                                                'station')
                                             plot_kwargs_station['marker'] = 'o'
                                             plot_kwargs_station['label'] = 'AHCCD-Stations\n(significant)'
-                                            ax = fg.scattermap(
-                                                data=data_sig,
-                                                ax=ax,
-                                                plot_kw=plot_kwargs_station,
-                                                **scattermap_kwargs,
+                                            if data_sig.size > 0:
+                                                ax = fg.scattermap(
+                                                    data=data_sig,
+                                                    ax=ax,
+                                                    plot_kw=plot_kwargs_station,
+                                                    **scattermap_kwargs,
+                                                )
+                                            legend_elements.append(
+                                                matplotlib.lines.Line2D([0], [0],
+                                                                        linestyle='none',
+                                                                        marker=plot_kwargs_station['marker'],
+                                                                        markerfacecolor='none',
+                                                                        markeredgecolor='#333333',
+                                                                        label=plot_kwargs_station['label'])
                                             )
-                                    # else:
-                                    #     ax = fax.axs.flat[-1] if isinstance(fax, xarray.plot.FacetGrid) else fax
                                     ax.set_title('')
                                     facet_label = title if 'year' not in freq else 'ANN'
                                     ax.text(x=0.8, y=0.93, s=facet_label, fontsize=14, fontweight='bold',
@@ -579,14 +625,14 @@ if __name__ == "__main__":
                                     )
 
                                 fig = fax.fig if isinstance(fax, xarray.plot.FacetGrid) else fax.axes.figure
-                                handles, labels = ax.get_legend_handles_labels()
-                                if 'linregress' in da_grid.name:
-                                    handles.append(matplotlib.patches.Patch(hatch=hatches[0], fill=False))
-                                    labels.append('non-significant')
-                                if handles:
-                                    ax.legend(handles=handles, labels=labels, **CONFIG["plotting"][freq]["legend_kwargs"])
+                                if legend_elements:
+                                    legend_elements.reverse()
+                                    ax.legend(
+                                        handles=legend_elements,
+                                        **CONFIG["plotting"][freq]["legend_kwargs"]
+                                    )
                                 fig.subplots_adjust(**CONFIG["plotting"][freq]["subplots_adjust_kwargs"])
-                                title = '\n'.join(wrap(plot_id[:1].upper() + plot_id[1:], len(plot_id) / 2))
+                                title = '\n'.join(wrap(plot_id[:1].upper() + plot_id[1:], len(plot_id) / 2 + 5))
                                 # CONFIG["plotting"][freq]["suptitle_wrap"]))
                                 fig.suptitle(title, **CONFIG["plotting"][freq]["suptitle_kwargs"])
                             # plt.show(block=False)
@@ -618,7 +664,9 @@ if __name__ == "__main__":
                             fig.savefig(out_file, **CONFIG["plotting"]["savefig_kwargs"])
                             plt.close(fig)
                         except Exception as e:
-                            logger.error(f"Error plotting {da_grid.name} for {key_input} ({horizon}): {e}", exc_info=True)
+                            logger.error(f"Error plotting {da_grid.name} for {key_input} ({horizon}): {e}",
+                                         exc_info=True)
+                            # raise e
                             continue
 
     # --- ENSEMBLES ---
