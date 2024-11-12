@@ -255,7 +255,7 @@ if __name__ == "__main__":
                             logger.info(f"Computing climatology for {key_input} for period {period}")
 
                             # Calculate climatological mean --------------------------------
-                            logger.info(f"Computing climatological mean for {key_input} for period {period}")
+                            logger.info(f"- Computing climatological mean for {key_input} for period {period}")
                             ds_mean = xs.aggregate.climatological_op(
                                 ds=ds_input,
                                 **CONFIG["aggregate"]["climatological_mean"],
@@ -266,7 +266,7 @@ if __name__ == "__main__":
                             all_horizons.append(ds_mean)
 
                             # Calculate interannual standard deviation, skipping intra-[freq] std --------------------
-                            logger.info(f"Computing interannual standard deviation for {key_input} for period {period}")
+                            logger.info(f"- Computing interannual standard deviation for {key_input} for period {period}")
                             # exclude intra-[freq] standard deviation
                             ds_input_std = ds_input[[v for v in CONFIG["aggregate"]["vars_for_interannual_std"]
                                                      if v in ds_input.data_vars]]
@@ -284,7 +284,7 @@ if __name__ == "__main__":
 
                             # Calculate climatological standard deviation for pr, tg, tn, tx only --------------------
                             logger.info(
-                                f"Computing climatological standard deviation for {key_input} for period {period}")
+                                f"- Computing climatological standard deviation for {key_input} for period {period}")
                             # ToDo: This could be generic to work for all terms involved, depending on the input freq
                             ds_std_clim = xr.Dataset()
                             with xr.set_options(keep_attrs=True):
@@ -321,10 +321,11 @@ if __name__ == "__main__":
                                         f"total standard deviation of {' '.join(ds_std[ds_std_varname].attrs['description'].split(' ')[-3:])}"
                                     ds_std_clim[new_varname].attrs['long_name'] = ds_std_clim[new_varname].attrs[
                                         'description']
-                            all_horizons.append(ds_std_clim)
+                            if ds_std_clim:
+                                all_horizons.append(ds_std_clim)
 
                             # Calculate trends -----------------------------------------------
-                            logger.info(f"Computing climatological linregress for {key_input} for period {period}")
+                            logger.info(f"- Computing climatological linregress for {key_input} for period {period}")
 
                             # ds_input_trend1 = ds_input[[v for v in ds_input.data_vars if 'mean' in v]]
                             ds_input_trend = ds_input[[v for v in CONFIG["aggregate"]["vars_for_climatological_trend"]
@@ -368,7 +369,7 @@ if __name__ == "__main__":
                 # matplotlib.use('wxAgg')
                 # matplotlib.use("TkAgg")
                 # matplotlib.use("macosx")
-                matplotlib.use('Qt5Agg')
+                # matplotlib.use('Qt5Agg')
                 # matplotlib.use('Agg')
 
                 fg.utils.set_mpl_style('ouranos')
@@ -380,23 +381,34 @@ if __name__ == "__main__":
 
                         try:
                             # Filter specific variables/indicators/periods
-                            # if 'dtr' not in da_grid.name: continue  # FixMe: remove this
+                            if da_grid.name not in CONFIG["plotting"]["indicators"]:
+                                continue
+
+                                # if 'dtr' not in da_grid.name: continue  # FixMe: remove this
                             # if '1981-2010' not in horizon: continue  # FixMe: remove this
                             # if 'tx_mean_clim_linregress' not in da_grid.name: continue  # FixMe: remove this
                             # if any(n in da_grid.name for n in ['tg', 'tx', 'tn']):
                             # if 'RDRS' not in key_input: continue  # FixMe: remove this
-                            # if 'year' in freq: continue  # FixMe: remove this
-                            #if 'season' in freq: continue  # FixMe: remove this
-                            #if 'month' in freq: continue  # FixMe: remove this
+                            #if 'year' in freq: continue  # FixMe: remove this
+                            if 'season' in freq: continue  # FixMe: remove this
+                            if 'month' in freq: continue  # FixMe: remove this
+                            #if 'YS-JUL' not in ds_input.attrs['cat:xrfreq']: continue
 
                             # Wait! if we don't have that indicator in the config, let's configure it
                             logger.info(f"Coming up: {da_grid.name}.")
                             if da_grid.name not in CONFIG["plotting"]:
                                 warnings.warn(f"Variable {da_grid.name} not in CONFIG['plotting']!")
                                 continue
-                            else:
-                                logger.info(f"Nope, I'm not plotting {da_grid.name} for {key_input} ({horizon}) this time!")
-                                continue
+                            # else:
+                            #     logger.info(f"Nope, I'm not plotting '{da_grid.name}' for '{key_input}' ({horizon}) "
+                            #                 f"this time! I can't find it in the configuration!")
+                            #     continue
+
+                            # Fix heat/cold spell long names # ToDo: remove this
+                            if 'spell' in da_grid.name and 'class' not in da_grid.attrs['long_name']:
+                                da_grid.attrs['long_name'] = \
+                                    [da_grid.attrs['long_name'][:-2] + ' ' + s \
+                                    for s in da_grid.name.split('_') if 'class' in s][0]
 
                             # get a plot_id for labeling and file naming -------------------------------------------
                             plot_id = (f"{CONFIG['plotting'][da_grid.name]['label']} "
@@ -653,6 +665,7 @@ if __name__ == "__main__":
                             cur = {
                                 "processing_level": "test_figures",
                                 "horizon": horizon,
+                                "freq": freq,
                                 "file_name": file_name,
                             }
                             out_file = Path(f"{CONFIG['paths']['figures']}".format(**cur))
@@ -660,7 +673,7 @@ if __name__ == "__main__":
                                 out_file.parent.mkdir(parents=True, exist_ok=True)
 
                             # save to png
-                            logger.info(f"Saving {out_file}.png ...")
+                            logger.info(f"Saving {out_file} ...")
                             fig.savefig(out_file, **CONFIG["plotting"]["savefig_kwargs"])
                             plt.close(fig)
                         except Exception as e:

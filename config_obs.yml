@@ -15,7 +15,7 @@ tasks:
   #- regrid # Regrid the simulation onto a common grid (ERA5-Land).
   #- cleanup # Handle different units in datasets.
   #- indicators # Compute xclim indicators on the datasets.
-  - climatologies # Compute climatological operations for the indicators (mean, std, trend).
+  #- climatologies # Compute climatological operations for the indicators (mean, std, trend).
   - plotting # Make plots of results from climatological operations for annual, seasonal, and monthly data.
   #- "ensembles" # Compute/compare different datasets and assess uncertainties in historical data (ToDo)
 
@@ -309,8 +309,7 @@ aggregate:  # ------------------------------------- Climatological Operations --
     - days_below_m25
     - freeze_thaw_cycles
     - freezing_degree_days_lt_0
-    - thawing_degree_days_gt_0
-    - no_thaw_days
+    - degree_days_above_0
     #    - frost_free_season_start
     #    - frost_free_season_end
     #    - frost_free_season_length
@@ -320,8 +319,16 @@ aggregate:  # ------------------------------------- Climatological Operations --
     - cooling_degree_days_gt_18
     - heat_spell_total_length_class1
     - heat_spell_frequency_class1
+    - heat_spell_total_length_class2
+    - heat_spell_frequency_class2
+    - heat_spell_total_length_class3
+    - heat_spell_frequency_class3
     - cold_spell_total_length_class1
     - cold_spell_frequency_class1
+    - cold_spell_total_length_class2
+    - cold_spell_frequency_class2
+    - cold_spell_total_length_class3
+    - cold_spell_frequency_class3
     - hot_days_gt_30
     - hot_days_gt_32
     - pr_mean
@@ -330,6 +337,7 @@ aggregate:  # ------------------------------------- Climatological Operations --
     - tn_min
     - tropical_nights_gt_20
     - tropical_nights_gt_22
+    - tx_days_below_0
     - tx_mean
     - tx_max
     - dtr
@@ -356,6 +364,126 @@ plotting:  # ------------------------------------- Plotting --------------------
     memory_limit: "12GB"
   data:
     processing_level: climatology
+  # List of indicators to plot
+  indicators:
+#    - R95pTOT_clim_linregress
+#    - R95pTOT_clim_mean
+#    - R95pTOT_clim_std
+#    - R99pTOT_clim_linregress
+#    - R99pTOT_clim_mean
+#    - R99pTOT_clim_std
+#    - RX1day_clim_linregress
+#    - RX1day_clim_mean
+#    - RX1day_clim_std
+#    - RX5day_clim_linregress
+#    - RX5day_clim_mean
+#    - RX5day_clim_std
+    - cold_spell_frequency_class1_clim_linregress
+    - cold_spell_frequency_class1_clim_mean
+    - cold_spell_frequency_class2_clim_linregress
+    - cold_spell_frequency_class2_clim_mean
+    - cold_spell_frequency_class2_clim_std
+    - cold_spell_frequency_class3_clim_linregress
+    - cold_spell_frequency_class3_clim_mean
+    - cold_spell_frequency_class3_clim_std
+    - cold_spell_total_length_class1_clim_linregress
+    - cold_spell_total_length_class1_clim_mean
+    - cold_spell_total_length_class1_clim_std
+    - cold_spell_total_length_class2_clim_linregress
+    - cold_spell_total_length_class2_clim_mean
+    - cold_spell_total_length_class2_clim_std
+    - cold_spell_total_length_class3_clim_linregress
+    - cold_spell_total_length_class3_clim_mean
+    - cold_spell_total_length_class3_clim_std
+#    - cooling_degree_days_gt_18_clim_linregress
+#    - cooling_degree_days_gt_18_clim_mean
+#    - cooling_degree_days_gt_18_clim_std
+#    - days_above_0_clim_linregress
+#    - days_above_0_clim_mean
+#    - days_above_0_clim_std
+#    - days_below_m25_clim_linregress
+#    - days_below_m25_clim_mean
+#    - days_below_m25_clim_std
+#    - degree_days_above_0_clim_linregress
+#    - degree_days_above_0_clim_mean
+#    - degree_days_above_0_clim_std
+#    - dtr_clim_linregress
+#    - dtr_clim_mean
+#    - dtr_clim_std
+#    - dtrmax_clim_linregress
+#    - dtrmax_clim_mean
+#    - dtrmax_clim_std
+#    - freeze_thaw_cycles_clim_linregress
+#    - freeze_thaw_cycles_clim_mean
+#    - freeze_thaw_cycles_clim_std
+#    - freezing_degree_days_lt_0_clim_linregress
+#    - freezing_degree_days_lt_0_clim_mean
+#    - freezing_degree_days_lt_0_clim_std
+#    - growing_degree_days_gt_5_clim_linregress
+#    - growing_degree_days_gt_5_clim_mean
+#    - growing_degree_days_gt_5_clim_std
+    - heat_spell_frequency_class1_clim_linregress
+    - heat_spell_frequency_class1_clim_mean
+    - heat_spell_frequency_class1_clim_std
+    - heat_spell_frequency_class2_clim_linregress
+    - heat_spell_frequency_class2_clim_mean
+    - heat_spell_frequency_class2_clim_std
+    - heat_spell_frequency_class3_clim_linregress
+    - heat_spell_frequency_class3_clim_mean
+    - heat_spell_frequency_class3_clim_std
+    - heat_spell_total_length_class1_clim_linregress
+    - heat_spell_total_length_class1_clim_mean
+    - heat_spell_total_length_class1_clim_std
+    - heat_spell_total_length_class2_clim_linregress
+    - heat_spell_total_length_class2_clim_mean
+    - heat_spell_total_length_class2_clim_std
+    - heat_spell_total_length_class3_clim_linregress
+    - heat_spell_total_length_class3_clim_mean
+    - heat_spell_total_length_class3_clim_std
+#    - heating_degree_days_lt_15_clim_linregress
+#    - heating_degree_days_lt_15_clim_mean
+#    - heating_degree_days_lt_15_clim_std
+#    - hot_days_gt_30_clim_linregress
+#    - hot_days_gt_30_clim_mean
+#    - hot_days_gt_30_clim_std
+#    - hot_days_gt_32_clim_linregress
+#    - hot_days_gt_32_clim_mean
+#    - hot_days_gt_32_clim_std
+#    - pr_mean_clim_linregress
+#    - pr_mean_clim_mean
+#    - pr_mean_clim_std
+#    - pr_std_clim_mean
+#    - pr_std_clim_total
+#    - tg_mean_clim_linregress
+#    - tg_mean_clim_mean
+#    - tg_mean_clim_std
+#    - tg_std_clim_mean
+#    - tg_std_clim_total
+#    - tn_mean_clim_linregress
+#    - tn_mean_clim_mean
+#    - tn_mean_clim_std
+#    - tn_min_clim_linregress
+#    - tn_min_clim_mean
+#    - tn_min_clim_std
+#    - tn_std_clim_mean
+#    - tn_std_clim_total
+#    - tropical_nights_gt_20_clim_linregress
+#    - tropical_nights_gt_20_clim_mean
+#    - tropical_nights_gt_20_clim_std
+#    - tropical_nights_gt_22_clim_linregress
+#    - tropical_nights_gt_22_clim_mean
+#    - tropical_nights_gt_22_clim_std
+#    - tx_days_below_0_clim_linregress
+#    - tx_days_below_0_clim_mean
+#    - tx_days_below_0_clim_std
+#    - tx_max_clim_linregress
+#    - tx_max_clim_mean
+#    - tx_max_clim_std
+#    - tx_mean_clim_linregress
+#    - tx_mean_clim_mean
+#    - tx_mean_clim_std
+#    - tx_std_clim_mean
+#    - tx_std_clim_total
   # global plot arguments
   gridmap_kwargs:
     contourf: True
@@ -366,6 +494,8 @@ plotting:  # ------------------------------------- Plotting --------------------
         linewidth: 0.3
   # Translate cat:xrfreq to xrfreq_name
   YS-JAN:
+    xrfreq_name: year
+  YS-JUL:
     xrfreq_name: year
   QS-DEC:
     xrfreq_name: season
@@ -738,56 +868,130 @@ plotting:  # ------------------------------------- Plotting --------------------
     ticks: linspace
     units: days
     divergent: False
-  heat_wave_3days_frequency_class3_clim_linregress:
+  heat_spell_frequency_class1_clim_linregress: &trend_heat_spell_frequency_all_classes
     label: ''
     limits:
-      year: &vmin_vmax_trend_heat_wave_3days_frequency_class3
+      year: &vmin_vmax_trend_heat_spell_frequency_all_classes
         vmin: -2
         vmax: 2
-      season: *vmin_vmax_trend_heat_wave_3days_frequency_class3
-      month: *vmin_vmax_trend_heat_wave_3days_frequency_class3
+      season: *vmin_vmax_trend_heat_spell_frequency_all_classes
+      month: *vmin_vmax_trend_heat_spell_frequency_all_classes
     levels: 9
     ticks: linspace
     units: days
     divergent: True
-  heat_wave_3days_frequency_class3_clim_mean: &mean_and_std_heat_wave_3days_frequency_class3
+  heat_spell_frequency_class1_clim_mean: &mean_and_std_heat_spell_frequency_all_classes
     label: ''
     limits:
-      year: &vmin_vmax_mean_heat_wave_3days_frequency_class3
+      year: &vmin_vmax_mean_heat_spell_frequency_all_classes
         vmin: 0
         vmax: 5
-      season: *vmin_vmax_mean_heat_wave_3days_frequency_class3
-      month: *vmin_vmax_mean_heat_wave_3days_frequency_class3
+      season: *vmin_vmax_mean_heat_spell_frequency_all_classes
+      month: *vmin_vmax_mean_heat_spell_frequency_all_classes
     levels: 11
     ticks: linspace
     units: days
     divergent: False
-  heat_wave_3days_frequency_class3_clim_std: *mean_and_std_heat_wave_3days_frequency_class3  # ToDo: Are these good values?
-  heat_wave_days_class3_clim_linregress:
+  heat_spell_frequency_class1_clim_std: *mean_and_std_heat_spell_frequency_all_classes  # ToDo: Are these good values?
+  heat_spell_total_length_class1_clim_linregress: &trend_heat_spell_total_length_all_classes
     label: ''
     limits:
-      year: &vmin_vmax_trend_heat_wave_days_class3
+      year: &vmin_vmax_trend_heat_spell_total_length_all_classes
         vmin: -2
         vmax: 2
-      season: *vmin_vmax_trend_heat_wave_days_class3
-      month: *vmin_vmax_trend_heat_wave_days_class3
+      season: *vmin_vmax_trend_heat_spell_total_length_all_classes
+      month: *vmin_vmax_trend_heat_spell_total_length_all_classes
     levels: 9
     ticks: linspace
     units: days
     divergent: True
-  heat_wave_days_class3_clim_mean: &mean_and_std_heat_wave_days_class3
+  heat_spell_total_length_class1_clim_mean: &mean_and_std_heat_spell_total_length_all_classes
     label: ''
     limits:
-      year: &vmin_vmax_mean_heat_wave_days_class3
+      year: &vmin_vmax_mean_heat_spell_total_length_all_classes
         vmin: 0
         vmax: 5
-      season: *vmin_vmax_mean_heat_wave_days_class3
-      month: *vmin_vmax_mean_heat_wave_days_class3
+      season: *vmin_vmax_mean_heat_spell_total_length_all_classes
+      month: *vmin_vmax_mean_heat_spell_total_length_all_classes
     levels: 11
     ticks: linspace
     units: days
     divergent: False
-  heat_wave_days_class3_clim_std: *mean_and_std_heat_wave_days_class3  # ToDo: Are these good values?
+  heat_spell_total_length_class1_clim_std: *mean_and_std_heat_spell_total_length_all_classes
+  heat_spell_frequency_class2_clim_linregress: *trend_heat_spell_frequency_all_classes
+  heat_spell_frequency_class2_clim_mean: *mean_and_std_heat_spell_frequency_all_classes
+  heat_spell_frequency_class2_clim_std: *mean_and_std_heat_spell_frequency_all_classes
+  heat_spell_total_length_class2_clim_linregress: *trend_heat_spell_total_length_all_classes
+  heat_spell_total_length_class2_clim_mean: *mean_and_std_heat_spell_total_length_all_classes
+  heat_spell_total_length_class2_clim_std: *mean_and_std_heat_spell_total_length_all_classes
+  heat_spell_frequency_class3_clim_linregress: *trend_heat_spell_frequency_all_classes
+  heat_spell_frequency_class3_clim_mean: *mean_and_std_heat_spell_frequency_all_classes
+  heat_spell_frequency_class3_clim_std: *mean_and_std_heat_spell_frequency_all_classes
+  heat_spell_total_length_class3_clim_linregress: *trend_heat_spell_total_length_all_classes
+  heat_spell_total_length_class3_clim_mean: *mean_and_std_heat_spell_total_length_all_classes
+  heat_spell_total_length_class3_clim_std: *mean_and_std_heat_spell_total_length_all_classes
+  cold_spell_frequency_class1_clim_linregress: &trend_cold_spell_frequency_all_classes
+    label: ''
+    limits:
+      year: &vmin_vmax_trend_cold_spell_frequency_all_classes
+        vmin: -2
+        vmax: 2
+      season: *vmin_vmax_trend_cold_spell_frequency_all_classes
+      month: *vmin_vmax_trend_cold_spell_frequency_all_classes
+    levels: 9
+    ticks: linspace
+    units: days
+    divergent: True
+  cold_spell_frequency_class1_clim_mean: &mean_and_std_cold_spell_frequency_all_classes
+    label: ''
+    limits:
+      year: &vmin_vmax_mean_cold_spell_frequency_all_classes
+        vmin: 0
+        vmax: 5
+      season: *vmin_vmax_mean_cold_spell_frequency_all_classes
+      month: *vmin_vmax_mean_cold_spell_frequency_all_classes
+    levels: 11
+    ticks: linspace
+    units: days
+    divergent: False
+    cold_spell_frequency_class1_clim_std: *mean_and_std_cold_spell_frequency_all_classes  # ToDo: Are these good values?
+  cold_spell_total_length_class1_clim_linregress: &trend_cold_spell_total_length_all_classes
+    label: ''
+    limits:
+      year: &vmin_vmax_trend_cold_spell_total_length_all_classes
+        vmin: -2
+        vmax: 2
+      season: *vmin_vmax_trend_cold_spell_total_length_all_classes
+      month: *vmin_vmax_trend_cold_spell_total_length_all_classes
+    levels: 9
+    ticks: linspace
+    units: days
+    divergent: True
+  cold_spell_total_length_class1_clim_mean: &mean_and_std_cold_spell_total_length_all_classes
+    label: ''
+    limits:
+      year: &vmin_vmax_mean_cold_spell_total_length_all_classes
+        vmin: 0
+        vmax: 5
+      season: *vmin_vmax_mean_cold_spell_total_length_all_classes
+      month: *vmin_vmax_mean_cold_spell_total_length_all_classes
+    levels: 11
+    ticks: linspace
+    units: days
+    divergent: False
+  cold_spell_total_length_class1_clim_std: *mean_and_std_cold_spell_total_length_all_classes
+  cold_spell_frequency_class2_clim_linregress: *trend_cold_spell_frequency_all_classes
+  cold_spell_frequency_class2_clim_mean: *mean_and_std_cold_spell_frequency_all_classes
+  cold_spell_frequency_class2_clim_std: *mean_and_std_cold_spell_frequency_all_classes
+  cold_spell_total_length_class2_clim_linregress: *trend_cold_spell_total_length_all_classes
+  cold_spell_total_length_class2_clim_mean: *mean_and_std_cold_spell_total_length_all_classes
+  cold_spell_total_length_class2_clim_std: *mean_and_std_cold_spell_total_length_all_classes
+  cold_spell_frequency_class3_clim_linregress: *trend_cold_spell_frequency_all_classes
+  cold_spell_frequency_class3_clim_mean: *mean_and_std_cold_spell_frequency_all_classes
+  cold_spell_frequency_class3_clim_std: *mean_and_std_cold_spell_frequency_all_classes
+  cold_spell_total_length_class3_clim_linregress: *trend_cold_spell_total_length_all_classes
+  cold_spell_total_length_class3_clim_mean: *mean_and_std_cold_spell_total_length_all_classes
+  cold_spell_total_length_class3_clim_std: *mean_and_std_cold_spell_total_length_all_classes
   hot_days_gt_30_clim_linregress: &trend_hot_days_and_nights_gt_x
     label: ''
     limits:
@@ -822,7 +1026,66 @@ plotting:  # ------------------------------------- Plotting --------------------
   tropical_nights_gt_22_clim_linregress: *trend_hot_days_and_nights_gt_x
   tropical_nights_gt_22_clim_mean: *mean_and_std_hot_days_and_nights_gt_x
   tropical_nights_gt_22_clim_std: *mean_and_std_hot_days_and_nights_gt_x  # ToDo: Are these good values?
-
+  tx_max_clim_linregress:
+    label: ''
+    limits:
+      year:
+        vmin: -5
+        vmax: 5
+    levels: 11
+    ticks: linspace
+    units: degC
+    divergent: True
+  tx_max_clim_mean:
+    label: ''
+    limits:
+      year:
+        vmin: 20
+        vmax: 35
+    levels: 16
+    ticks: linspace
+    units: degC
+    divergent: False
+  tx_max_clim_std:
+    label: ''
+    limits:
+      year:
+        vmin: 0
+        vmax: 5
+    levels: 11
+    ticks: linspace
+    units: degC
+    divergent: False
+  tn_min_clim_linregress:
+    label: ''
+    limits:
+      year:
+        vmin: -5
+        vmax: 5
+    levels: 11
+    ticks: linspace
+    units: degC
+    divergent: True
+  tn_min_clim_mean:
+    label: ''
+    limits:
+      year:
+        vmin: -45
+        vmax: -25
+    levels: 21
+    ticks: linspace
+    units: degC
+    divergent: False
+  tn_min_clim_std:
+    label: ''
+    limits:
+      year:
+        vmin: 0
+        vmax: 5
+    levels: 11
+    ticks: linspace
+    units: degC
+    divergent: False
 
   # -------------------------------- Agro-climatic Indicators Plots -------------------------------------
   freeze_thaw_cycles_clim_linregress:
@@ -890,7 +1153,7 @@ plotting:  # ------------------------------------- Plotting --------------------
     ticks: linspace
     units: ˚C·days
     divergent: False
-  growing_degree_days_gt_4_clim_linregress:
+  growing_degree_days_gt_5_clim_linregress:
     label: ''
     limits:
       year: &vmin_vmax_trend_growing_degree_days_gt_4
@@ -902,7 +1165,7 @@ plotting:  # ------------------------------------- Plotting --------------------
     ticks: linspace
     units: GDD
     divergent: True
-  growing_degree_days_gt_4_clim_mean: &mean_and_std_growing_degree_days_gt_4
+  growing_degree_days_gt_5_clim_mean: &mean_and_std_growing_degree_days_gt_4
     label: ''
     limits:
       year: &vmin_vmax_mean_growing_degree_days_gt_4
@@ -914,7 +1177,7 @@ plotting:  # ------------------------------------- Plotting --------------------
     ticks: linspace
     units: GDD
     divergent: False
-  growing_degree_days_gt_4_clim_std:
+  growing_degree_days_gt_5_clim_std:
     label: ''
     limits:
       year: &vmin_vmax_std_growing_degree_days_gt_4
@@ -926,7 +1189,146 @@ plotting:  # ------------------------------------- Plotting --------------------
     ticks: linspace
     units: GDD
     divergent: False
+  degree_days_above_0_clim_linregress:
+    label: ''
+    limits:
+      year:
+        vmin: -100
+        vmax: 100
+    levels: 21
+    ticks: linspace
+    units: ˚C·days
+    divergent: True
+  degree_days_above_0_clim_mean:
+    label: ''
+    limits:
+      year:
+        vmin: 0
+        vmax: 5000
+    levels: 21
+    ticks: linspace
+    units: ˚C·days
+    divergent: False
+  degree_days_above_0_clim_std:
+    label: ''
+    limits:
+      year:
+        vmin: 0
+        vmax: 500
+    levels: 11
+    ticks: linspace
+    units: ˚C·days
+    divergent: False
+  tx_days_below_0_clim_linregress:
+    label: ''
+    limits:
+      year: &vmin_vmax_trend_tx_days_below_0
+        vmin: -10
+        vmax: 10
+      season: *vmin_vmax_trend_tx_days_below_0
+      month: *vmin_vmax_trend_tx_days_below_0
+    levels: 21
+    ticks: linspace
+    units: days
+    divergent: True
+  tx_days_below_0_clim_mean:
+    label: ''
+    limits:
+      year: &vmin_vmax_mean_tx_days_below_0
+        vmin: 0
+        vmax: 90
+      season: *vmin_vmax_mean_tx_days_below_0
+      month: *vmin_vmax_mean_tx_days_below_0
+    levels: 16
+    ticks: linspace
+    units: days
+    divergent: False
+  tx_days_below_0_clim_std:
+    label: ''
+    limits:
+      year: &vmin_vmax_std_tx_days_below_0
+        vmin: 0
+        vmax: 10
+      season: *vmin_vmax_std_tx_days_below_0
+      month: *vmin_vmax_std_tx_days_below_0
+    levels: 21
+    ticks: linspace
+    units: days
+    divergent: False
 
+# ------------------------------------- Socio-Economic Indicators -------------------------------------
+  heating_degree_days_lt_15_clim_linregress:
+    label: ''
+    limits:
+      year: &vmin_vmax_trend_heating_degree_days_lt_15
+        vmin: -500
+        vmax: 500
+      season: *vmin_vmax_trend_heating_degree_days_lt_15
+      month: *vmin_vmax_trend_heating_degree_days_lt_15
+    levels: 21
+    ticks: linspace
+    units: HDD
+    divergent: True
+  heating_degree_days_lt_15_clim_mean:
+    label: ''
+    limits:
+      year: &vmin_vmax_mean_heating_degree_days_lt_15
+        vmin: 0
+        vmax: 8000
+      season: *vmin_vmax_mean_heating_degree_days_lt_15
+      month: *vmin_vmax_mean_heating_degree_days_lt_15
+    levels: 17
+    ticks: linspace
+    units: HDD
+    divergent: False
+  heating_degree_days_lt_15_clim_std:
+    label: ''
+    limits:
+      year: &vmin_vmax_std_heating_degree_days_lt_15
+        vmin: 0
+        vmax: 500
+      season: *vmin_vmax_std_heating_degree_days_lt_15
+      month: *vmin_vmax_std_heating_degree_days_lt_15
+    levels: 11
+    ticks: linspace
+    units: HDD
+    divergent: False
+  cooling_degree_days_gt_18_clim_linregress:
+    label: ''
+    limits:
+      year: &vmin_vmax_trend_cooling_degree_days_gt_18
+        vmin: -500
+        vmax: 500
+      season: *vmin_vmax_trend_cooling_degree_days_gt_18
+      month: *vmin_vmax_trend_cooling_degree_days_gt_18
+    levels: 21
+    ticks: linspace
+    units: CDD
+    divergent: True
+  cooling_degree_days_gt_18_clim_mean:
+    label: ''
+    limits:
+      year: &vmin_vmax_mean_cooling_degree_days_gt_18
+        vmin: 0
+        vmax: 3000
+      season: *vmin_vmax_mean_cooling_degree_days_gt_18
+      month: *vmin_vmax_mean_cooling_degree_days_gt_18
+    levels: 13
+    ticks: linspace
+    units: CDD
+    divergent: False
+  cooling_degree_days_gt_18_clim_std:
+    label: ''
+    limits:
+      year: &vmin_vmax_std_cooling_degree_days_gt_18
+        vmin: 0
+        vmax: 200
+      season: *vmin_vmax_std_cooling_degree_days_gt_18
+      month: *vmin_vmax_std_cooling_degree_days_gt_18
+    levels: 11
+    ticks: linspace
+    units: CDD
+    divergent: False
 
 # ------------------------------------- Precipitation Plots -------------------------------------
   # mean

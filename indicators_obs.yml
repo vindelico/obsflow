@@ -397,6 +397,7 @@ indicators:
     base: heat_spell_total_length
     cf_attrs:
       var_name: heat_spell_total_length_class1
+      long_name: Heat spell total length class 1
     parameters:
       resample_before_rl: False
       thresh_tasmin: 20 degC
@@ -409,6 +410,7 @@ indicators:
     base: heat_spell_total_length
     cf_attrs:
       var_name: heat_spell_total_length_class2
+      long_name: Heat spell total length class 2
     parameters:
       resample_before_rl: False
       thresh_tasmin: 18 degC
@@ -421,6 +423,7 @@ indicators:
     base: heat_spell_total_length
     cf_attrs:
       var_name: heat_spell_total_length_class3
+      long_name: Heat spell total length class 3
     parameters:
       resample_before_rl: False
       thresh_tasmin: 16 degC
@@ -433,6 +436,7 @@ indicators:
     base: heat_spell_frequency
     cf_attrs:
       var_name: heat_spell_frequency_class1
+      long_name: Heat spell frequency class 1
     parameters:
       resample_before_rl: False
       thresh_tasmin: 20 degC
@@ -445,6 +449,7 @@ indicators:
     base: heat_spell_frequency
     cf_attrs:
       var_name: heat_spell_frequency_class2
+      long_name: Heat spell frequency class 2
     parameters:
       resample_before_rl: False
       thresh_tasmin: 18 degC
@@ -457,6 +462,7 @@ indicators:
     base: heat_spell_frequency
     cf_attrs:
       var_name: heat_spell_frequency_class3
+      long_name: Heat spell frequency class 3
     parameters:
       resample_before_rl: False
       thresh_tasmin: 16 degC
@@ -470,7 +476,7 @@ indicators:
     compute: bivariate_spell_length_statistics
     cf_attrs:
       var_name: cold_spell_total_length_class1
-      long_name: "Cold spell total_length."
+      long_name: Cold spell total length class 1
       description: "{freq} total_length of cold spell events. A cold spell occurs when the {window}-day averages of daily minimum and maximum temperatures each are below {threshold1} and {threshold2}.  All days of the {window}-day period are considered part of the spell."
     input:
       data1: tasmin
@@ -489,6 +495,7 @@ indicators:
     base: .cold_spell_total_length_class1
     cf_attrs:
       var_name: cold_spell_total_length_class2
+      long_name: Cold spell total length class 2
     parameters:
       threshold1: -28 degC
       threshold2: -16 degC
@@ -496,6 +503,7 @@ indicators:
     base: .cold_spell_total_length_class1
     cf_attrs:
       var_name: cold_spell_total_length_class3
+      long_name: Cold spell total length class 3
     parameters:
       threshold1: -29 degC
       threshold2: -20 degC
@@ -504,7 +512,7 @@ indicators:
     compute: bivariate_spell_length_statistics
     cf_attrs:
       var_name: cold_spell_frequency_class1
-      long_name: "Cold spell frequency."
+      long_name: Cold spell frequency class 1
       description: "{freq} frequency of cold spell events. A cold spell occurs when the {window}-day averages of daily minimum and maximum temperatures each are below {threshold1} and {threshold2}.  All days of the {window}-day period are considered part of the spell."
     input:
       data1: tasmin
@@ -523,6 +531,7 @@ indicators:
     base: .cold_spell_frequency_class1
     cf_attrs:
       var_name: cold_spell_frequency_class2
+      long_name: Cold spell frequency class 2
     parameters:
       threshold1: -28 degC
       threshold2: -16 degC
@@ -530,6 +539,7 @@ indicators:
     base: .cold_spell_frequency_class1
     cf_attrs:
       var_name: cold_spell_frequency_class3
+      long_name: Cold spell frequency class 3
     parameters:
       threshold1: -29 degC
       threshold2: -20 degC
@@ -571,13 +581,14 @@ indicators:
     base: freezing_degree_days
     cf_attrs:
       long_name: annual freezing degree days with a threshold of 0 ˚C starting on July 1st
-      var_name: freezing_degree_lt_0
+      var_name: freezing_degree_days_lt_0
     parameters:
       thresh: 0 degC
       freq: YS-JUL
   thawing_degree_days_gt_0: # NEW
     base: thawing_degree_days
     cf_attrs:
+      long_name: annual degree days above a threshold of 0 ˚C
       var_name: degree_days_above_0
     parameters:
       thresh: 0 degC
