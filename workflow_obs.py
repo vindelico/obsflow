@@ -407,7 +407,7 @@ if __name__ == "__main__":
                             # Fix heat/cold spell long names # ToDo: remove this
                             if 'spell' in da_grid.name and 'class' not in da_grid.attrs['long_name']:
                                 da_grid.attrs['long_name'] = \
-                                    [da_grid.attrs['long_name'][:-2] + ' ' + s \
+                                    [da_grid.attrs['long_name'][:-1] + ' ' + s \
                                     for s in da_grid.name.split('_') if 'class' in s][0]
 
                             # get a plot_id for labeling and file naming -------------------------------------------
